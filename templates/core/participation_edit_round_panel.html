@@ -5,7 +5,10 @@
               <p style="margin: 0 0 0.25rem; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Active Dates</p>
               <p style="margin: 0; font-weight: 600;">{{ r.start_date|date:"M d, Y" }} – {{ r.end_date|date:"M d, Y" }}</p>
             </div>
-            <div style="text-align: right;">
+            <div style="text-align: right; display: flex; align-items: center; gap: 1rem;">
+              <button type="button" onclick="showLeaderboard('{{ r.id }}')" class="btn btn--ghost" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.03);">
+                <span>🏆</span> Round Leaderboard
+              </button>
               <span class="badge badge--active">
                 {% if is_single %}
                   {{ r.singles_challenges.all|length }} Singles Matches
@@ -30,7 +33,11 @@
                     <tr>
                       <td colspan="3" style="padding: 0 1.5rem 0.85rem; background: rgba(0,0,0,0.15);">
                         {% if c.get_winner_label %}
-                        <p style="margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--text-light);"><span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;">Winner</span> · <strong style="color: #34a853;">{{ c.get_winner_label }}</strong></p>
+                        <div style="display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; padding: 0.4rem 0.75rem; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 2rem;">
+                          <span style="font-size: 0.9rem;">👑</span>
+                          <span style="color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;">Winner</span>
+                          <span style="color: #ffd700; font-weight: 700; font-size: 0.85rem;">{{ c.get_winner_label }}</span>
+                        </div>
                         {% endif %}
                         {% with rows=c.get_frame_score_rows %}
                         {% if rows %}
@@ -41,22 +48,35 @@
                               <tr>
                                 <th style="padding: 0.25rem 0.35rem; text-align: center; color: var(--text-muted); font-weight: 600;">F</th>
                                 {% for row in rows %}
-                                <th style="padding: 0.25rem 0.2rem; text-align: center; color: var(--text-muted); font-weight: 600;">{{ row.0 }}</th>
+                                <th style="padding: 0.25rem 0.2rem; text-align: center; color: var(--text-muted); font-weight: 600;">{{ row.order }}</th>
                                 {% endfor %}
+                                <th style="padding: 0.25rem 0.35rem; text-align: center; color: var(--accent); font-weight: 700;">T</th>
                               </tr>
                             </thead>
                             <tbody>
                               <tr>
                                 <td style="padding: 0.25rem 0.35rem; text-align: right; color: var(--text-muted); white-space: nowrap;">P1</td>
                                 {% for row in rows %}
-                                <td style="padding: 0.25rem 0.2rem; text-align: center; font-weight: 600;">{% if row.1 is not None %}{{ row.1 }}{% else %}—{% endif %}</td>
+                                <td style="padding: 0.25rem 0.2rem; text-align: center; font-weight: 600;">
+                                  <div class="quick-score-box" style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 2px; justify-content: center; align-items: center;">
+                                    <input type="text" value="{% if row.p1_r1 == 10 %}X{% else %}{{ row.p1_r1 }}{% endif %}" readonly style="width: 24px; padding: 1px; font-size: 0.7rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center; border-radius: 2px;">
+                                    <input type="text" value="{% if row.p1_r1 != 10 and row.p1_r1|add:row.p1_r2 == 10 %}/{% else %}{{ row.p1_r2 }}{% endif %}" readonly style="width: 24px; padding: 1px; font-size: 0.7rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center; border-radius: 2px;">
+                                  </div>
+                                </td>
                                 {% endfor %}
+                                <td style="padding: 0.25rem 0.35rem; text-align: center; font-weight: 800; color: var(--accent); border-left: 1px solid rgba(255,255,255,0.05);">{{ c.get_p1_score }}</td>
                               </tr>
                               <tr>
                                 <td style="padding: 0.25rem 0.35rem; text-align: right; color: var(--text-muted); white-space: nowrap;">P2</td>
                                 {% for row in rows %}
-                                <td style="padding: 0.25rem 0.2rem; text-align: center; font-weight: 600;">{% if row.2 is not None %}{{ row.2 }}{% else %}—{% endif %}</td>
+                                <td style="padding: 0.25rem 0.2rem; text-align: center; font-weight: 600;">
+                                  <div class="quick-score-box" style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 2px; justify-content: center; align-items: center;">
+                                    <input type="text" value="{% if row.p2_r1 == 10 %}X{% else %}{{ row.p2_r1 }}{% endif %}" readonly style="width: 24px; padding: 1px; font-size: 0.7rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center; border-radius: 2px;">
+                                    <input type="text" value="{% if row.p2_r1 != 10 and row.p2_r1|add:row.p2_r2 == 10 %}/{% else %}{{ row.p2_r2 }}{% endif %}" readonly style="width: 24px; padding: 1px; font-size: 0.7rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center; border-radius: 2px;">
+                                  </div>
+                                </td>
                                 {% endfor %}
+                                <td style="padding: 0.25rem 0.35rem; text-align: center; font-weight: 800; color: var(--accent); border-left: 1px solid rgba(255,255,255,0.05);">{{ c.get_p2_score }}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -82,33 +102,57 @@
                     <tr>
                       <td colspan="3" style="padding: 0 1.5rem 0.85rem; background: rgba(0,0,0,0.15);">
                         {% if c.get_winner_label %}
-                        <p style="margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--text-light);"><span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;">Winner</span> · <strong style="color: #34a853;">{{ c.get_winner_label }}</strong></p>
+                        <div style="display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; padding: 0.4rem 0.75rem; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 2rem;">
+                          <span style="font-size: 0.9rem;">👑</span>
+                          <span style="color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;">Winner</span>
+                          <span style="color: #ffd700; font-weight: 700; font-size: 0.85rem;">{{ c.get_winner_label }}</span>
+                        </div>
                         {% endif %}
                         {% with rows=c.get_frame_score_rows %}
                         {% if rows %}
-                        <p style="margin: 0 0 0.4rem; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">Pins per frame</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                          <p style="margin: 0; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">Pins per frame</p>
+                          <div style="text-align: right; display: flex; align-items: center; gap: 1rem;">
+                            <button type="button" onclick="showLeaderboard('{{ r.id }}')" class="btn btn--ghost" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.03);">
+                              <span>🏆</span> Round Leaderboard
+                            </button>
+                          </div>
+                        </div>
                         <div style="overflow-x: auto;">
                           <table class="frame-scores-table" style="width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 280px;">
                             <thead>
                               <tr>
                                 <th style="padding: 0.25rem 0.35rem; text-align: center; color: var(--text-muted); font-weight: 600;"></th>
                                 {% for row in rows %}
-                                <th style="padding: 0.25rem 0.2rem; text-align: center; color: var(--text-muted); font-weight: 600;">{{ row.0 }}</th>
+                                <th style="padding: 0.25rem 0.2rem; text-align: center; color: var(--text-muted); font-weight: 600;">{{ row.order }}</th>
                                 {% endfor %}
+                                <th style="padding: 0.25rem 0.35rem; text-align: center; color: var(--accent); font-weight: 700;">T</th>
                               </tr>
                             </thead>
                             <tbody>
                               <tr>
                                 <td style="padding: 0.25rem 0.35rem; text-align: right; color: var(--text-muted); white-space: nowrap;">T1</td>
                                 {% for row in rows %}
-                                <td style="padding: 0.25rem 0.2rem; text-align: center; font-weight: 600;">{% if row.1 is not None %}{{ row.1 }}{% else %}—{% endif %}</td>
+                                <td style="padding: 0.25rem 0.2rem; text-align: center; font-weight: 600;">
+                                  <div class="quick-score-box" style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 2px; justify-content: center; align-items: center;">
+                                    <input type="text" value="{% if row.t1_r1 == 10 %}X{% else %}{{ row.t1_r1 }}{% endif %}" readonly style="width: 24px; padding: 1px; font-size: 0.7rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center; border-radius: 2px;">
+                                    <input type="text" value="{% if row.t1_r1 != 10 and row.t1_r1|add:row.t1_r2 == 10 %}/{% else %}{{ row.t1_r2 }}{% endif %}" readonly style="width: 24px; padding: 1px; font-size: 0.7rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center; border-radius: 2px;">
+                                  </div>
+                                </td>
                                 {% endfor %}
+                                <td style="padding: 0.25rem 0.35rem; text-align: center; font-weight: 800; color: var(--accent); border-left: 1px solid rgba(255,255,255,0.05);">{{ c.get_t1_score }}</td>
                               </tr>
                               <tr>
                                 <td style="padding: 0.25rem 0.35rem; text-align: right; color: var(--text-muted); white-space: nowrap;">T2</td>
                                 {% for row in rows %}
-                                <td style="padding: 0.25rem 0.2rem; text-align: center; font-weight: 600;">{% if row.2 is not None %}{{ row.2 }}{% else %}—{% endif %}</td>
+                                <td style="padding: 0.25rem 0.2rem; text-align: center; font-weight: 600;">
+                                  <div class="quick-score-box" style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 2px; justify-content: center; align-items: center;">
+                                    <input type="text" value="{% if row.t2_r1 == 10 %}X{% else %}{{ row.t2_r1 }}{% endif %}" readonly style="width: 24px; padding: 1px; font-size: 0.7rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center; border-radius: 2px;">
+                                    <input type="text" value="{% if row.t2_r1 != 10 and row.t2_r1|add:row.t2_r2 == 10 %}/{% else %}{{ row.t2_r2 }}{% endif %}" readonly style="width: 24px; padding: 1px; font-size: 0.7rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center; border-radius: 2px;">
+                                  </div>
+                                </td>
                                 {% endfor %}
+                                <td style="padding: 0.25rem 0.35rem; text-align: center; font-weight: 800; color: var(--accent); border-left: 1px solid rgba(255,255,255,0.05);">{{ c.get_t2_score }}</td>
                               </tr>
                             </tbody>
                           </table>

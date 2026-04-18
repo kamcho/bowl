@@ -43,6 +43,7 @@ class User(AbstractUser):
         ('O', 'Other'),
     )
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True)
+    birth_date = models.DateField(blank=True, null=True)
     primary_phone = models.CharField(max_length=20, blank=True, null=True)
     secondary_phone = models.CharField(max_length=20, blank=True, null=True)
 
@@ -112,13 +113,16 @@ class Participation(models.Model):
         unique_together = ('season', 'game_type', 'name')
 class Round(models.Model):
     name = models.CharField(max_length=100)
+    order = models.IntegerField()
     season = models.ForeignKey(Season, on_delete=models.CASCADE, related_name='rounds')
     participants = models.ManyToManyField(User, related_name='rounds')
     teams = models.ManyToManyField(Team, related_name='team_rounds')
     start_date = models.DateField()
     end_date = models.DateField()
     game_type = models.ForeignKey(Participation, on_delete=models.CASCADE, related_name='rounds')
-    
+    is_completed = models.BooleanField(default=False)
+
+
     def __str__(self):
         return f"{self.name} - {self.season.name}"
 
@@ -162,19 +166,72 @@ class SinglesChallenge(models.Model):
         return [f.total or 0 for f in frames]
 
     def get_frame_score_rows(self):
-        """(frame_number, player_1_pins, player_2_pins) for each frame."""
-        s1 = self.get_p1_frame_scores
-        s2 = self.get_p2_frame_scores
-        n = max(len(s1), len(s2))
+        """
+        Returns list of frame info including roll scores and recorded status.
+        """
+        f1 = list(SinglesFrame.objects.filter(round=self.round, participant=self.player_1).order_by('order'))
+        f2 = list(SinglesFrame.objects.filter(round=self.round, participant=self.player_2).order_by('order'))
+        
+        n = 10
         rows = []
         for i in range(n):
-            rows.append(
-                (
-                    i + 1,
-                    s1[i] if i < len(s1) else None,
-                    s2[i] if i < len(s2) else None,
-                )
-            )
+            order = i + 1
+            
+            # P1 info
+            p1_r1 = p1_r2 = 0
+            p1_r1_recorded = p1_r2_recorded = False
+            if i < len(f1):
+                rolls = {r.order: r for r in f1[i].rolls.all()}
+                r1 = rolls.get(1)
+                if r1:
+                    p1_r1 = r1.score
+                    p1_r1_recorded = r1.is_recorded
+                r2 = rolls.get(2)
+                if r2:
+                    p1_r2 = r2.score
+                    p1_r2_recorded = r2.is_recorded
+            
+            # P2 info
+            p2_r1 = p2_r2 = 0
+            p2_r1_recorded = p2_r2_recorded = False
+            if i < len(f2):
+                rolls = {r.order: r for r in f2[i].rolls.all()}
+                r1 = rolls.get(1)
+                if r1:
+                    p2_r1 = r1.score
+                    p2_r1_recorded = r1.is_recorded
+                r2 = rolls.get(2)
+                if r2:
+                    p2_r2 = r2.score
+                    p2_r2_recorded = r2.is_recorded
+            
+            # Display logic
+            def format_score(r1, r2):
+                if r1 == 10:
+                    return "X"
+                if (r1 or 0) + (r2 or 0) == 10:
+                    return f"{r1} /"
+                if r1 == 0 and r2 == 0:
+                    return "—"
+                return f"{r1} {r2}"
+
+            rows.append({
+                'order': order,
+                'p1_r1': p1_r1,
+                'p1_r1_recorded': p1_r1_recorded,
+                'p1_r2': p1_r2,
+                'p1_r2_recorded': p1_r2_recorded,
+                'p1_total': p1_r1 + p1_r2,
+                'p1_display': format_score(p1_r1, p1_r2),
+                'p2_r1': p2_r1,
+                'p2_r1_recorded': p2_r1_recorded,
+                'p2_r2': p2_r2,
+                'p2_r2_recorded': p2_r2_recorded,
+                'p2_total': p2_r1 + p2_r2,
+                'p2_display': format_score(p2_r1, p2_r2),
+                'p1_editable': not p1_r1_recorded or not p1_r2_recorded,
+                'p2_editable': not p2_r1_recorded or not p2_r2_recorded,
+            })
         return rows
 
     def get_winner_label(self):
@@ -201,6 +258,24 @@ class SinglesChallenge(models.Model):
             return self.player_1
         if total2 > total1:
             return self.player_2
+        return None
+    def get_next_p1_frame(self):
+        frames = list(SinglesFrame.objects.filter(round=self.round, participant=self.player_1).order_by('order'))
+        for i, f in enumerate(frames):
+            if not f.played:
+                # Check if all subsequent frames are also unplayed
+                if all(not next_f.played for next_f in frames[i+1:]):
+                    return f
+                return None
+        return None
+
+    def get_next_p2_frame(self):
+        frames = list(SinglesFrame.objects.filter(round=self.round, participant=self.player_2).order_by('order'))
+        for i, f in enumerate(frames):
+            if not f.played:
+                if all(not next_f.played for next_f in frames[i+1:]):
+                    return f
+                return None
         return None
 
 class TeamChallenge(models.Model):
@@ -235,19 +310,72 @@ class TeamChallenge(models.Model):
         return [f.total or 0 for f in frames]
 
     def get_frame_score_rows(self):
-        """(frame_number, team_1_pins, team_2_pins) for each frame."""
-        s1 = self.get_t1_frame_scores
-        s2 = self.get_t2_frame_scores
-        n = max(len(s1), len(s2))
+        """
+        Returns list of frame info including roll scores and recorded status.
+        """
+        f1 = list(TeamFrame.objects.filter(round=self.round, team=self.team_1).order_by('order'))
+        f2 = list(TeamFrame.objects.filter(round=self.round, team=self.team_2).order_by('order'))
+        
+        n = 10
         rows = []
         for i in range(n):
-            rows.append(
-                (
-                    i + 1,
-                    s1[i] if i < len(s1) else None,
-                    s2[i] if i < len(s2) else None,
-                )
-            )
+            order = i + 1
+            
+            # T1 info
+            t1_r1 = t1_r2 = 0
+            t1_r1_recorded = t1_r2_recorded = False
+            if i < len(f1):
+                rolls = {r.order: r for r in f1[i].rolls.all()}
+                r1 = rolls.get(1)
+                if r1:
+                    t1_r1 = r1.score
+                    t1_r1_recorded = r1.is_recorded
+                r2 = rolls.get(2)
+                if r2:
+                    t1_r2 = r2.score
+                    t1_r2_recorded = r2.is_recorded
+            
+            # T2 info
+            t2_r1 = t2_r2 = 0
+            t2_r1_recorded = t2_r2_recorded = False
+            if i < len(f2):
+                rolls = {r.order: r for r in f2[i].rolls.all()}
+                r1 = rolls.get(1)
+                if r1:
+                    t2_r1 = r1.score
+                    t2_r1_recorded = r1.is_recorded
+                r2 = rolls.get(2)
+                if r2:
+                    t2_r2 = r2.score
+                    t2_r2_recorded = r2.is_recorded
+            
+            # Display logic
+            def format_score(r1, r2):
+                if r1 == 10:
+                    return "X"
+                if (r1 or 0) + (r2 or 0) == 10:
+                    return f"{r1} /"
+                if r1 == 0 and r2 == 0:
+                    return "—"
+                return f"{r1} {r2}"
+
+            rows.append({
+                'order': order,
+                't1_r1': t1_r1,
+                't1_r1_recorded': t1_r1_recorded,
+                't1_r2': t1_r2,
+                't1_r2_recorded': t1_r2_recorded,
+                't1_total': t1_r1 + t1_r2,
+                't1_display': format_score(t1_r1, t1_r2),
+                't2_r1': t2_r1,
+                't2_r1_recorded': t2_r1_recorded,
+                't2_r2': t2_r2,
+                't2_r2_recorded': t2_r2_recorded,
+                't2_total': t2_r1 + t2_r2,
+                't2_display': format_score(t2_r1, t2_r2),
+                't1_editable': not t1_r1_recorded or not t1_r2_recorded,
+                't2_editable': not t2_r1_recorded or not t2_r2_recorded,
+            })
         return rows
 
     def get_winner_label(self):
@@ -273,6 +401,23 @@ class TeamChallenge(models.Model):
         if total2 > total1:
             return self.team_2
         return None
+    def get_next_t1_frame(self):
+        frames = list(TeamFrame.objects.filter(round=self.round, team=self.team_1).order_by('order'))
+        for i, f in enumerate(frames):
+            if not f.played:
+                if all(not next_f.played for next_f in frames[i+1:]):
+                    return f
+                return None
+        return None
+
+    def get_next_t2_frame(self):
+        frames = list(TeamFrame.objects.filter(round=self.round, team=self.team_2).order_by('order'))
+        for i, f in enumerate(frames):
+            if not f.played:
+                if all(not next_f.played for next_f in frames[i+1:]):
+                    return f
+                return None
+        return None
 
 class SinglesFrame(models.Model):
     order = models.IntegerField(default=0)
@@ -292,10 +437,12 @@ class SinglesRoll(models.Model):
     frame = models.ForeignKey(SinglesFrame, on_delete=models.CASCADE, related_name='rolls')
     order = models.IntegerField(default=0)
     score = models.IntegerField(default=0)
+    is_recorded = models.BooleanField(default=False)
     
 class TeamRoll(models.Model):
     frame = models.ForeignKey(TeamFrame, on_delete=models.CASCADE, related_name='rolls')
     order = models.IntegerField(default=0)
     score = models.IntegerField(default=0)
+    is_recorded = models.BooleanField(default=False)
 
 

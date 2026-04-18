@@ -1,0 +1,103 @@
+{% extends "core/base.html" %}
+
+{% block title %}Teams | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="teams-page">
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div>
+        <p class="dash-header__eyebrow">Competition</p>
+        <h1 class="dash-header__title">Bowling Teams</h1>
+      </div>
+      <div class="dash-header__actions">
+        <a href="{% url 'team_create' %}" class="btn btn--primary">+ Create New Team</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-content">
+    
+    <!-- My Teams Section -->
+    {% if my_teams %}
+    <div style="margin-bottom: 3rem;">
+      <h2 style="font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--text-light); display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.25rem;">🛡️</span> My Teams
+      </h2>
+      <div class="dash-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+        {% for team in my_teams %}
+        <div class="card team-card" style="padding: 1.5rem; position: relative; transition: transform 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">{{ team.category }}</span>
+            {% if team.captain == user %}
+              <span class="badge" style="background: rgba(255, 215, 0, 0.1); color: #ffd700; border: 1px solid rgba(255,215,0,0.2);">Captain</span>
+            {% endif %}
+          </div>
+          <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">{{ team.name }}</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">{{ team.members.count }} Members</p>
+          
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: auto;">
+            <div class="avatar-group" style="display: flex; margin-left: 0.5rem;">
+              {% for member in team.members.all|slice:":3" %}
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-deep); margin-left: -8px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; color: #fff;" title="{{ member.get_full_name }}">
+                {{ member.first_name.0 }}
+              </div>
+              {% endfor %}
+              {% if team.members.count > 3 %}
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid var(--bg-deep); margin-left: -8px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-muted);">
+                +{{ team.members.count|add:"-3" }}
+              </div>
+              {% endif %}
+            </div>
+            <a href="{% url 'team_detail' team.pk %}" class="btn btn--ghost btn--sm">Manage →</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Recruiting Teams Section -->
+    <div>
+      <h2 style="font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--text-light); display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.25rem;">📢</span> Teams Recruiting
+      </h2>
+      {% if teams %}
+      <div class="dash-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+        {% for team in teams %}
+        {% if team not in my_teams %}
+        <div class="card team-card" style="padding: 1.5rem; border: 1px solid rgba(52, 168, 83, 0.2); background: linear-gradient(145deg, var(--bg-card), rgba(52, 168, 83, 0.05));">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <span class="badge" style="background: rgba(52, 168, 83, 0.1); color: #34a853;">{{ team.category }}</span>
+            <span class="badge" style="background: rgba(52, 168, 83, 0.2); color: #34a853; border: 1px dashed #34a853;">Hiring</span>
+          </div>
+          <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">{{ team.name }}</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Captain: {{ team.captain.get_full_name }}</p>
+          
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <p style="font-size: 0.8rem; color: var(--text-muted);">{{ team.members.count }} spots filled</p>
+            <a href="{% url 'team_detail' team.pk %}" class="btn btn--primary btn--sm">View Profile</a>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="dash-empty" style="padding: 4rem 2rem;">
+        <p class="dash-empty__text">No teams are currently recruiting</p>
+        <p class="dash-empty__hint">Why not start your own team and invite your friends?</p>
+        <a href="{% url 'team_create' %}" class="btn btn--primary" style="margin-top: 1rem;">Create a Team</a>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+
+<style>
+.team-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+</style>
+{% endblock %}

@@ -53,10 +53,10 @@
               {% for row in score_rows %}
               <tr>
                 <td style="font-weight: 600;">{{ row.order }}</td>
-                <td><input type="number" inputmode="numeric" name="p1_f{{ row.order }}_r1" value="{{ row.p1_r1 }}" min="0" max="10" class="form-control roll-input" style="width: 4rem; padding: 0.35rem 0.5rem;" /></td>
-                <td><input type="number" inputmode="numeric" name="p1_f{{ row.order }}_r2" value="{{ row.p1_r2 }}" min="0" max="10" class="form-control roll-input" style="width: 4rem; padding: 0.35rem 0.5rem;" /></td>
-                <td><input type="number" inputmode="numeric" name="p2_f{{ row.order }}_r1" value="{{ row.p2_r1 }}" min="0" max="10" class="form-control roll-input" style="width: 4rem; padding: 0.35rem 0.5rem;" /></td>
-                <td><input type="number" inputmode="numeric" name="p2_f{{ row.order }}_r2" value="{{ row.p2_r2 }}" min="0" max="10" class="form-control roll-input" style="width: 4rem; padding: 0.35rem 0.5rem;" /></td>
+                <td><input type="text" name="p1_f{{ row.order }}_r1" value="{% if row.p1_r1 == 10 %}X{% else %}{{ row.p1_r1 }}{% endif %}" class="form-control roll-input" style="width: 3rem; text-align: center;" {% if row.p1_r1_recorded %}readonly{% endif %} /></td>
+                <td><input type="text" name="p1_f{{ row.order }}_r2" value="{% if row.p1_r1 != 10 and row.p1_r1|add:row.p1_r2 == 10 %}/{% else %}{{ row.p1_r2 }}{% endif %}" class="form-control roll-input" style="width: 3rem; text-align: center;" {% if row.p1_r2_recorded %}readonly{% endif %} /></td>
+                <td><input type="text" name="p2_f{{ row.order }}_r1" value="{% if row.p2_r1 == 10 %}X{% else %}{{ row.p2_r1 }}{% endif %}" class="form-control roll-input" style="width: 3rem; text-align: center;" {% if row.p2_r1_recorded %}readonly{% endif %} /></td>
+                <td><input type="text" name="p2_f{{ row.order }}_r2" value="{% if row.p2_r1 != 10 and row.p2_r1|add:row.p2_r2 == 10 %}/{% else %}{{ row.p2_r2 }}{% endif %}" class="form-control roll-input" style="width: 3rem; text-align: center;" {% if row.p2_r2_recorded %}readonly{% endif %} /></td>
               </tr>
               {% endfor %}
             </tbody>

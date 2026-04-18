@@ -46,6 +46,7 @@
           <li><a class="nav__link" href="#faq">FAQ</a></li>
           <li><a class="nav__link" href="#contact">Contact</a></li>
           <li><a class="nav__link" href="#rules">Rules</a></li>
+          <li><a class="nav__link" href="{% url 'team_list' %}">Teams</a></li>
           {% if user.is_authenticated %}
             {% if user.is_staff %}
               <li><a class="nav__link nav__link--accent" href="{% url 'admin_dashboard' %}" style="background-color: var(--text-muted); color: var(--bg-deep);">Admin</a></li>
@@ -62,6 +63,16 @@
   </header>
 
   <main id="main">
+    {% if messages %}
+      <div class="messages-container" style="max-width: 1200px; margin: 1rem auto; padding: 0 1.5rem;">
+        {% for message in messages %}
+          <div class="alert alert--{{ message.tags }}" style="padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem; background: {% if message.tags == 'success' %}rgba(52, 168, 83, 0.1){% elif message.tags == 'error' %}rgba(234, 67, 53, 0.1){% else %}rgba(251, 188, 5, 0.1){% endif %}; border: 1px solid {% if message.tags == 'success' %}#34a853{% elif message.tags == 'error' %}#ea4335{% else %}#fbbc05{% endif %}; color: {% if message.tags == 'success' %}#34a853{% elif message.tags == 'error' %}#ea4335{% else %}#fbbc05{% endif %}; font-weight: 500;">
+            <span style="font-size: 1.25rem;">{% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% else %}⚠️{% endif %}</span>
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 

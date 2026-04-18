@@ -69,6 +69,10 @@ class RoundCreateForm(forms.Form):
         max_length=100,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Semifinals'}),
     )
+    order = forms.IntegerField(
+        initial=0,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 5'}),
+    )
     start_date = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
     )
@@ -99,3 +103,24 @@ class PromoteWinnersForm(forms.Form):
         self.fields['from_round'].queryset = qs
         if qs.exists():
             self.fields['from_round'].empty_label = None
+
+
+from .models import Team
+
+class TeamForm(forms.ModelForm):
+    class Meta:
+        model = Team
+        fields = ['name', 'category', 'is_recruiting']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Strike Force'}),
+            'category': forms.Select(attrs={'class': 'form-control'}),
+            'is_recruiting': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+        }
+
+
+class AddMemberForm(forms.Form):
+    identifier = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Email or Phone Number'}),
+        help_text="Enter the registered email or primary phone of the user."
+    )

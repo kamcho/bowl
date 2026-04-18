@@ -1,0 +1,50 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ title }} | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="form-page">
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div>
+        <p class="dash-header__eyebrow">Teams</p>
+        <h1 class="dash-header__title">{{ title }}</h1>
+      </div>
+      <div class="dash-header__actions">
+        <a href="{% url 'team_list' %}" class="btn btn--ghost">Cancel</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-content" style="max-width: 600px; margin: 0 auto;">
+    <div class="card" style="padding: 2.5rem;">
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-light);">Team Name</label>
+          {{ form.name }}
+          {% if form.name.errors %}<p class="form-error" style="color: #ea4335; font-size: 0.8rem; margin-top: 0.4rem;">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-light);">Category</label>
+          {{ form.category }}
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">Choose the size of your team (Double, Trio, or Four).</p>
+          {% if form.category.errors %}<p class="form-error" style="color: #ea4335; font-size: 0.8rem; margin-top: 0.4rem;">{{ form.category.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="form-group" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
+          {{ form.is_recruiting }}
+          <label for="{{ form.is_recruiting.id_for_label }}" style="font-size: 0.9rem; font-weight: 500; cursor: pointer;">
+            Enable Recruiting
+            <span style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">Allow other users to see your team in the recruiting list.</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full" style="padding: 1rem;">{{ title }}</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

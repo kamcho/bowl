@@ -36,8 +36,8 @@
         <p class="dash-stat__value">—</p>
       </div>
       <div class="dash-stat card">
-        <p class="dash-stat__label">Team</p>
-        <p class="dash-stat__value">Free Agent</p>
+        <p class="dash-stat__label">Teams</p>
+        <p class="dash-stat__value">{% with t=user.member_teams.first %}{% if t %}{{ t.name }}{% else %}Free Agent{% endif %}{% endwith %}</p>
       </div>
     </div>
 
@@ -86,23 +86,23 @@
         </div>
         <div class="dash-card__body">
           <nav class="dash-links">
-            <a href="#" class="dash-links__item">
+            <a href="{% url 'team_list' %}" class="dash-links__item">
               <span class="dash-links__icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               </span>
-              <span class="dash-links__text">Find a Team</span>
+              <span class="dash-links__text">Browse Teams</span>
             </a>
-            <a href="#schedule" class="dash-links__item">
+            <a href="{% url 'team_create' %}" class="dash-links__item">
               <span class="dash-links__icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
               </span>
-              <span class="dash-links__text">View Schedule</span>
+              <span class="dash-links__text">Create Team</span>
             </a>
             <a href="#standings" class="dash-links__item">
               <span class="dash-links__icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               </span>
-              <span class="dash-links__text">Standings</span>
+              <span class="dash-links__text">Season Standings</span>
             </a>
             <a href="#" class="dash-links__item">
               <span class="dash-links__icon">
@@ -114,26 +114,223 @@
         </div>
       </div>
 
-      <!-- Activity Feed Card -->
+      <!-- My Fixtures Card -->
       <div class="dash-card card" style="grid-column: 1 / -1;">
         <div class="dash-card__header">
-          <h2 class="dash-card__title">Recent Activity</h2>
+          <h2 class="dash-card__title">My Fixtures</h2>
         </div>
-        <div class="dash-card__body">
-          <div class="dash-empty">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="24" cy="12" r="5" fill="currentColor" opacity="0.2"/>
-              <circle cx="14" cy="26" r="5" fill="currentColor" opacity="0.2"/>
-              <circle cx="34" cy="26" r="5" fill="currentColor" opacity="0.2"/>
-              <circle cx="24" cy="38" r="5" fill="currentColor" opacity="0.2"/>
-            </svg>
-            <p class="dash-empty__text">No games played yet</p>
-            <p class="dash-empty__hint">Join a team and start competing to see your stats here.</p>
-            <a href="#game-types" class="btn btn--primary" style="margin-top: 1rem;">Browse Formats</a>
-          </div>
+        <div class="dash-card__body" style="padding: 0;">
+          {% if singles or team_matches %}
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                <thead style="background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <tr>
+                    <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Type</th>
+                    <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Round &amp; Category</th>
+                    <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Opponent</th>
+                    <th style="padding: 1rem 1.5rem; text-align: right; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for c in singles %}
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                    <td style="padding: 1.25rem 1.5rem;">
+                      <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; background: rgba(52, 168, 83, 0.1); color: #34a853; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Singles</span>
+                    </td>
+                    <td style="padding: 1.25rem 1.5rem;">
+                      <p style="margin: 0; font-weight: 600;">{{ c.round.name }}</p>
+                      <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">{{ c.round.game_type.name }} • {{ c.round.season.name }}</p>
+                    </td>
+                    <td style="padding: 1.25rem 1.5rem;">
+                      {% if c.player_1 == user %}
+                        {{ c.player_2.get_full_name|default:c.player_2.email }}
+                      {% else %}
+                        {{ c.player_1.get_full_name|default:c.player_1.email }}
+                      {% endif %}
+                    </td>
+                    <td style="padding: 1.25rem 1.5rem; text-align: right;">
+                      {% if c.get_winner_label %}
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">{{ c.get_p1_score }} - {{ c.get_p2_score }}</span>
+                      {% else %}
+                        <span style="color: var(--accent); font-size: 0.85rem; font-weight: 600;">Scheduled</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                  {% for c in team_matches %}
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                    <td style="padding: 1.25rem 1.5rem;">
+                      <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; background: rgba(66, 133, 244, 0.1); color: #4285f4; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Team</span>
+                    </td>
+                    <td style="padding: 1.25rem 1.5rem;">
+                      <p style="margin: 0; font-weight: 600;">{{ c.round.name }}</p>
+                      <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">{{ c.round.game_type.name }} • {{ c.round.season.name }}</p>
+                    </td>
+                    <td style="padding: 1.25rem 1.5rem;">
+                      {% if c.team_1 in user.member_teams.all %}
+                        {{ c.team_2.name }}
+                      {% else %}
+                        {{ c.team_1.name }}
+                      {% endif %}
+                    </td>
+                    <td style="padding: 1.25rem 1.5rem; text-align: right;">
+                      {% if c.get_winner_label %}
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">{{ c.get_t1_score }} - {{ c.get_t2_score }}</span>
+                      {% else %}
+                        <span style="color: var(--accent); font-size: 0.85rem; font-weight: 600;">Scheduled</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="dash-empty" style="padding: 3rem 2rem;">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity: 0.2; margin-bottom: 1rem;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <p class="dash-empty__text">No fixtures found</p>
+              <p class="dash-empty__hint">You are not currently enrolled in any active tournament rounds.</p>
+              <a href="{% url 'home' %}" class="btn btn--primary" style="margin-top: 1rem;">Explore Tournaments</a>
+            </div>
+          {% endif %}
         </div>
       </div>
+
+      <!-- Season Leaderboard Card -->
+      <div class="dash-card card" id="standings" style="grid-column: 1 / -1; margin-top: 2rem;">
+        <div class="dash-card__header" style="border-bottom: none;">
+          <h2 class="dash-card__title">🏆 Season Standings</h2>
+          {% if active_season %}
+            <span class="badge badge--active">{{ active_season.name }}</span>
+          {% endif %}
+        </div>
+        
+        <div class="dash-card__body" style="padding: 0;">
+          {% if leaderboard_participations %}
+            <!-- Category Tabs -->
+            <div style="display: flex; gap: 0.5rem; padding: 0 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); overflow-x: auto; background: rgba(0,0,0,0.1);">
+              {% for p in leaderboard_participations %}
+              <button type="button" class="cat-tab-btn {% if forloop.first %}active{% endif %}" onclick="openCategoryTab(event, 'cat-{{ p.id }}')" style="background: none; border: none; border-bottom: 2px solid {% if forloop.first %}var(--accent){% else %}transparent{% endif %}; color: {% if forloop.first %}var(--text-light){% else %}var(--text-muted){% endif %}; padding: 0.85rem 1.25rem; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+                {{ p.name }}
+              </button>
+              {% endfor %}
+            </div>
+
+            <div class="cat-tabs-content">
+              {% for p in leaderboard_participations %}
+              <div id="cat-{{ p.id }}" class="cat-pane" style="display: {% if forloop.first %}block{% else %}none{% endif %};">
+                
+                <!-- Round Tabs -->
+                {% if p.rounds.all %}
+                  <div style="display: flex; gap: 0.4rem; padding: 1rem 1.5rem; background: rgba(255,255,255,0.02); overflow-x: auto;">
+                    {% for r in p.rounds.all %}
+                    <button type="button" class="round-tab-btn r-tab-{{ p.id }} {% if forloop.first %}active{% endif %}" onclick="openRoundLeaderboard(event, '{{ p.id }}', '{{ r.id }}')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 2rem; color: var(--text-muted); padding: 0.35rem 1rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+                      {{ r.name }}
+                    </button>
+                    {% endfor %}
+                  </div>
+                  
+                  <!-- Leaderboard Container -->
+                  <div id="lb-container-{{ p.id }}" style="padding: 1.5rem;">
+                    <div class="lb-loading" style="text-align: center; padding: 3rem; color: var(--text-muted);">Select a round to view standings</div>
+                  </div>
+                {% else %}
+                  <p style="padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">No rounds scheduled for this category yet.</p>
+                {% endif %}
+                
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p style="padding: 3rem; text-align: center; color: var(--text-muted);">No active season leaderboard data available.</p>
+          {% endif %}
+        </div>
+      </div>
+
     </div>
   </div>
 </section>
+
+<script>
+function openCategoryTab(evt, catId) {
+  var panes = document.getElementsByClassName("cat-pane");
+  for (var i = 0; i < panes.length; i++) panes[i].style.display = "none";
+  
+  var btns = document.getElementsByClassName("cat-tab-btn");
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove("active");
+    btns[i].style.borderBottomColor = "transparent";
+    btns[i].style.color = "var(--text-muted)";
+  }
+  
+  document.getElementById(catId).style.display = "block";
+  evt.currentTarget.classList.add("active");
+  evt.currentTarget.style.borderBottomColor = "var(--accent)";
+  evt.currentTarget.style.color = "var(--text-light)";
+  
+  // Trigger first round tab if not already loaded
+  var firstRoundBtn = document.querySelector(`#${catId} .round-tab-btn`);
+  if (firstRoundBtn) firstRoundBtn.click();
+}
+
+function openRoundLeaderboard(evt, catId, roundId) {
+  var btns = document.getElementsByClassName("r-tab-" + catId);
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove("active");
+    btns[i].style.background = "rgba(255,255,255,0.05)";
+    btns[i].style.color = "var(--text-muted)";
+    btns[i].style.borderColor = "rgba(255,255,255,0.1)";
+  }
+  
+  evt.currentTarget.classList.add("active");
+  evt.currentTarget.style.background = "var(--accent)";
+  evt.currentTarget.style.color = "#fff";
+  evt.currentTarget.style.borderColor = "var(--accent)";
+  
+  var container = document.getElementById("lb-container-" + catId);
+  container.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted);">Loading standings…</div>';
+  
+  var url = "{% url 'participation_round_leaderboard' 0 888888888 %}".replace('/0/', '/' + catId + '/').replace('888888888', roundId);
+  
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        if (data.leaderboard.length === 0) {
+          container.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted);">No scores recorded for this round yet.</div>';
+          return;
+        }
+        var html = '<table style="width:100%; border-collapse: collapse;">';
+        html += `<thead style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <tr>
+            <th style="padding:1rem 0.75rem; text-align:left; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase;">Rank</th>
+            <th style="padding:1rem 0.75rem; text-align:left; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase;">Participant</th>
+            <th style="padding:1rem 0.75rem; text-align:right; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase;">Round Pins</th>
+            <th style="padding:1rem 0.75rem; text-align:right; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase;">Total Pins</th>
+            <th style="padding:1rem 0.75rem; text-align:right; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase;">Played</th>
+          </tr>
+        </thead>`;
+        html += '<tbody>';
+        data.leaderboard.forEach(item => {
+          var isTop = item.rank <= 3;
+          var medal = item.rank === 1 ? '🥇' : (item.rank === 2 ? '🥈' : (item.rank === 3 ? '🥉' : ''));
+          html += `<tr style="border-bottom: 1px solid rgba(255,255,255,0.03); ${isTop ? 'background: rgba(255,215,0,0.02);' : ''}">
+            <td style="padding:1rem 0.75rem; font-weight:700; color:${item.rank===1 ? '#ffd700' : (item.rank===2 ? '#c0c0c0' : (item.rank===3 ? '#cd7f32' : 'var(--text-muted)'))};">${medal || item.rank}</td>
+            <td style="padding:1rem 0.75rem; font-weight:600;">${item.name}</td>
+            <td style="padding:1rem 0.75rem; text-align:right; font-weight:800; color:var(--accent);">${item.round_score}</td>
+            <td style="padding:1rem 0.75rem; text-align:right; font-weight:700; color:var(--text-light);">${item.total_pins}</td>
+            <td style="padding:1rem 0.75rem; text-align:right; color:var(--text-muted);">${item.rounds_played}</td>
+          </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var firstCatBtn = document.querySelector('.cat-tab-btn');
+  if (firstCatBtn) firstCatBtn.click();
+});
+</script>
 {% endblock %}

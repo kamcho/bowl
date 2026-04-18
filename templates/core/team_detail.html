@@ -1,0 +1,131 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ team.name }} | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="team-detail-page">
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div style="display: flex; align-items: center; gap: 1.5rem;">
+        <div style="width: 64px; height: 64px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), #ff9800); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 900; color: #fff; box-shadow: 0 10px 20px rgba(255,152,0,0.2);">
+          {{ team.name.0 }}
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+            <h1 class="dash-header__title" style="margin: 0;">{{ team.name }}</h1>
+            <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 0.7rem;">{{ team.category }}</span>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Captain: {{ team.captain.get_full_name }}</p>
+        </div>
+      </div>
+      <div class="dash-header__actions">
+        <a href="{% url 'team_list' %}" class="btn btn--ghost">← Back to Teams</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-content">
+    <div class="dash-grid" style="grid-template-columns: 2fr 1fr;">
+      
+      <!-- Left Column: Members -->
+      <div class="dash-card card">
+        <div class="dash-card__header">
+          <h2 class="dash-card__title">Team Members</h2>
+          <span class="badge" style="background: var(--accent); color: #fff;">{{ team.members.count }} / {% if team.category == 'Double' %}2{% elif team.category == 'Trio' %}3{% else %}4{% endif %}</span>
+        </div>
+        <div class="dash-card__body" style="padding: 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead style="background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <tr>
+                <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Member</th>
+                <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Role</th>
+                <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Contact</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for member in team.members.all %}
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                <td style="padding: 1rem 1.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: var(--accent);">
+                      {{ member.first_name.0 }}
+                    </div>
+                    <div>
+                      <p style="margin: 0; font-weight: 600;">{{ member.get_full_name|default:member.email }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding: 1rem 1.5rem;">
+                  {% if member == team.captain %}
+                    <span style="color: #ffd700; font-size: 0.85rem; font-weight: 600;">Captain</span>
+                  {% else %}
+                    <span style="color: var(--text-muted); font-size: 0.85rem;">Member</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 1rem 1.5rem;">
+                  <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">{{ member.primary_phone|default:"—" }}</p>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right Column: Management -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        
+        {% if is_captain %}
+        <!-- Add Member Card -->
+        <div class="dash-card card">
+          <div class="dash-card__header">
+            <h2 class="dash-card__title">Add Member</h2>
+          </div>
+          <div class="dash-card__body">
+            <form action="{% url 'team_add_member' team.pk %}" method="post">
+              {% csrf_token %}
+              <div class="form-group" style="margin-bottom: 1rem;">
+                {{ member_form.identifier }}
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">{{ member_form.identifier.help_text }}</p>
+              </div>
+              <button type="submit" class="btn btn--primary btn--full">Add User</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Settings Card -->
+        <div class="dash-card card">
+          <div class="dash-card__header">
+            <h2 class="dash-card__title">Team Settings</h2>
+          </div>
+          <div class="dash-card__body">
+            <form method="post">
+              {% csrf_token %}
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 1rem;">
+                <div>
+                  <p style="margin: 0; font-weight: 600; font-size: 0.9rem;">Recruiting Status</p>
+                  <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">{% if team.is_recruiting %}Currently hiring{% else %}Private team{% endif %}</p>
+                </div>
+                <button type="submit" name="toggle_recruiting" class="btn {% if team.is_recruiting %}btn--ghost{% else %}btn--primary{% endif %} btn--sm">
+                  {% if team.is_recruiting %}Stop{% else %}Start{% endif %} Recruiting
+                </button>
+              </div>
+            </form>
+            <button class="btn btn--ghost btn--full btn--sm" style="color: #ea4335;">Disband Team</button>
+          </div>
+        </div>
+        {% else %}
+        <!-- Join Card (Placeholder) -->
+        <div class="dash-card card" style="text-align: center; padding: 2rem;">
+          <h2 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Interested in joining?</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Reach out to <strong>{{ team.captain.get_full_name }}</strong> to request an invitation.</p>
+          <a href="mailto:{{ team.captain.email }}" class="btn btn--primary">Email Captain</a>
+        </div>
+        {% endif %}
+
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

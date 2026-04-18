@@ -31,6 +31,11 @@ urlpatterns = [
         name='participation_round_panel',
     ),
     path(
+        'manage/participations/<int:pk>/rounds/<int:round_id>/leaderboard/',
+        views.participation_round_leaderboard,
+        name='participation_round_leaderboard',
+    ),
+    path(
         'manage/participations/<int:pk>/challenges/singles/<int:challenge_id>/schedule/',
         views.participation_challenge_schedule,
         {'challenge_type': 'singles'},
@@ -55,10 +60,20 @@ urlpatterns = [
     path('manage/participations/<int:pk>/rounds/create/', views.participation_round_create, name='participation_round_create'),
     path('manage/participations/<int:pk>/rounds/promote/', views.participation_promote_winners, name='participation_promote_winners'),
     path('manage/participations/<int:pk>/delete/', views.participation_delete, name='participation_delete'),
+    path('manage/participations/<int:pk>/matches/<int:challenge_id>/quick-score/', views.quick_score_frame, name='quick_score_frame'),
 
     # Game Rules
     path('manage/rules/', views.gamerules_list, name='gamerules_list'),
     path('manage/rules/create/', views.gamerules_create, name='gamerules_create'),
     path('manage/rules/<int:pk>/edit/', views.gamerules_edit, name='gamerules_edit'),
     path('manage/rules/<int:pk>/delete/', views.gamerules_delete, name='gamerules_delete'),
+
+    # Teams
+    path('teams/', views.team_list, name='team_list'),
+    path('teams/create/', views.team_create, name='team_create'),
+    path('teams/<int:pk>/', views.team_detail, name='team_detail'),
+    path('teams/<int:pk>/add-member/', views.team_add_member, name='team_add_member'),
+    path('manage/participations/<int:pk>/generate-fixtures/', views.participation_generate_fixtures, name='participation_generate_fixtures'),
+    path('manage/participations/<int:pk>/rounds/<int:round_id>/manual-promote/', views.participation_manual_promote, name='participation_manual_promote'),
+    path('manage/participations/<int:pk>/rounds/<int:round_id>/complete/', views.participation_round_complete, name='participation_round_complete'),
 ]

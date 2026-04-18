@@ -78,27 +78,49 @@ def create_fake_data():
     part_team = Participation.objects.create(season=season, game_type=gt, name="Four", charge=80.00)
 
     print("Creating Rounds and Challenges...")
-    # 4 Rounds for Singles
+    # 4 Rounds + Semis for Singles
     singles_rounds = []
     for i in range(1, 5):
         r = Round.objects.create(
             name=f"Singles Round {i}", season=season, game_type=part_single,
             start_date=season.start_date + timedelta(days=i*7),
-            end_date=season.start_date + timedelta(days=i*7 + 6)
+            end_date=season.start_date + timedelta(days=i*7 + 6),
+            order=i
         )
         r.participants.set(users)
         singles_rounds.append(r)
+    
+    # Add Semis
+    semi_single = Round.objects.create(
+        name="Semis", season=season, game_type=part_single,
+        start_date=season.start_date + timedelta(days=35),
+        end_date=season.start_date + timedelta(days=41),
+        order=5
+    )
+    semi_single.participants.set(users[:10]) # Top 10 users for semis
+    singles_rounds.append(semi_single)
 
-    # 4 Rounds for Teams
+    # 4 Rounds + Semis for Teams
     teams_rounds = []
     for i in range(1, 5):
         r = Round.objects.create(
             name=f"Teams Round {i}", season=season, game_type=part_team,
             start_date=season.start_date + timedelta(days=i*7),
-            end_date=season.start_date + timedelta(days=i*7 + 6)
+            end_date=season.start_date + timedelta(days=i*7 + 6),
+            order=i
         )
         r.teams.set(teams)
         teams_rounds.append(r)
+
+    # Add Semis for teams
+    semi_team = Round.objects.create(
+        name="Semis", season=season, game_type=part_team,
+        start_date=season.start_date + timedelta(days=35),
+        end_date=season.start_date + timedelta(days=41),
+        order=5
+    )
+    semi_team.teams.set(teams[:4]) # Top 4 teams for semis
+    teams_rounds.append(semi_team)
 
     print("Creating Fixtures & Scores...")
     # Helper to generate 10 frames for a participant
