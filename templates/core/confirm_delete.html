@@ -1,0 +1,24 @@
+{% extends "core/base.html" %}
+
+{% block title %}Delete {{ object }} | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="account-section">
+  <div class="auth-card" style="max-width: 30rem;">
+    <header class="auth-card__header">
+      <h1 class="auth-card__title" style="color:#ff5e5e;">Confirm Delete</h1>
+      <p class="auth-card__subtitle">Are you sure you want to permanently delete:</p>
+    </header>
+
+    <div style="padding:1.25rem;border-radius:.85rem;background:rgba(255,94,94,.06);border:1px solid rgba(255,94,94,.15);margin-bottom:1.5rem;text-align:center;">
+      <p style="margin:0;font-size:1.1rem;font-weight:600;">{{ object }}</p>
+    </div>
+
+    <form method="post" style="display:flex;gap:.75rem;">
+      {% csrf_token %}
+      <button class="btn btn--full" type="submit" style="background:#ff5e5e;color:#fff;">Delete</button>
+      <a class="btn btn--ghost btn--full" href="{% url back_url %}">Cancel</a>
+    </form>
+  </div>
+</section>
+{% endblock %}

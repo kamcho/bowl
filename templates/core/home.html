@@ -1,0 +1,362 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block content %}
+<section class="hero" aria-labelledby="hero-heading">
+  <div class="hero__bg" aria-hidden="true"></div>
+  <div class="hero__inner">
+    <p class="hero__eyebrow">Spring league · April 2026</p>
+    <h1 id="hero-heading" class="hero__title">Roll for the <span class="hero__title-accent">crown</span></h1>
+    <p class="hero__lede">
+      Team brackets, certified lanes, and live standings — Metro’s biggest amateur open is back.
+    </p>
+    <div class="hero__actions">
+      <a class="btn btn--primary" href="#register">Enter your team</a>
+      <a class="btn btn--ghost" href="#schedule">View schedule</a>
+    </div>
+    <dl class="hero__stats">
+      <div class="hero__stat card">
+        <dt class="hero__stat-label">Teams</dt>
+        <dd class="hero__stat-value">48</dd>
+      </div>
+      <div class="hero__stat card">
+        <dt class="hero__stat-label">Prize pool</dt>
+        <dd class="hero__stat-value">$12k</dd>
+      </div>
+      <div class="hero__stat card">
+        <dt class="hero__stat-label">Finals</dt>
+        <dd class="hero__stat-value">May 4</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<section class="section section--schedule" id="schedule" aria-labelledby="schedule-heading">
+  <div class="section__inner">
+    <header class="section__header">
+      <p class="section__eyebrow">Key dates</p>
+      <h2 id="schedule-heading" class="section__title">Season schedule</h2>
+      <p class="section__intro">
+        Qualifying runs four weeks; top sixteen teams advance to bracket play. All blocks are USBC-sanctioned oil patterns.
+      </p>
+    </header>
+
+    <ol class="schedule">
+      <li class="schedule__item">
+        <div class="schedule__marker" aria-hidden="true"></div>
+        <article class="schedule__card">
+          <time class="schedule__date" datetime="2026-04-19">Apr 19 — 20</time>
+          <h3 class="schedule__name">Week 1 · Qualifiers</h3>
+          <p class="schedule__meta">Sat 2:00 PM · Sun 10:00 AM · Lanes 1–16</p>
+        </article>
+      </li>
+      <li class="schedule__item">
+        <div class="schedule__marker" aria-hidden="true"></div>
+        <article class="schedule__card">
+          <time class="schedule__date" datetime="2026-04-26">Apr 26 — 27</time>
+          <h3 class="schedule__name">Week 2 · Qualifiers</h3>
+          <p class="schedule__meta">Sat 2:00 PM · Sun 10:00 AM · Lanes 1–16</p>
+        </article>
+      </li>
+      <li class="schedule__item">
+        <div class="schedule__marker" aria-hidden="true"></div>
+        <article class="schedule__card">
+          <time class="schedule__date" datetime="2026-05-03">May 3</time>
+          <h3 class="schedule__name">Playoffs · Sweet 16</h3>
+          <p class="schedule__meta">Single elimination · 6:00 PM · Center draw</p>
+        </article>
+      </li>
+      <li class="schedule__item schedule__item--highlight">
+        <div class="schedule__marker" aria-hidden="true"></div>
+        <article class="schedule__card">
+          <time class="schedule__date" datetime="2026-05-04">May 4</time>
+          <h3 class="schedule__name">Finals · Championship</h3>
+          <p class="schedule__meta">Doors 5:00 PM · ESPN+ stream · Trophy &amp; purse presentation</p>
+        </article>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="section section--formats" id="game-types" aria-labelledby="formats-heading">
+  <div class="section__inner section__inner--wide">
+    <header class="section__header">
+      <p class="section__eyebrow">Choose your squad</p>
+      <h2 id="formats-heading" class="section__title">Game types</h2>
+      <p class="section__intro">
+        Three sanctioned divisions run on the same oil pattern. Pick one format per bowler; doubles and trios use team scoring with individual averages on file for handicap where posted.
+      </p>
+    </header>
+
+    <ul class="card-grid format-grid">
+      <li>
+        <article class="card format-card">
+          <p class="format-card__badge" aria-hidden="true">1</p>
+          <h3 class="format-card__title">Singles</h3>
+          <p class="format-card__tagline">Solo · scratch &amp; handicap flights</p>
+          <p class="format-card__body">
+            You bowl your own six-game block. Series pinfall ranks you in scratch and handicap brackets (90% of 220, max 30 pins). Awards by division; finals for top eight in each flight.
+          </p>
+          <ul class="format-card__meta">
+            <li><span class="format-card__label">Games</span> 6</li>
+            <li><span class="format-card__label">Roster</span> 1</li>
+          </ul>
+        </article>
+      </li>
+      <li>
+        <article class="card format-card">
+          <p class="format-card__badge" aria-hidden="true">2</p>
+          <h3 class="format-card__title">Doubles</h3>
+          <p class="format-card__tagline">Partner up · team series</p>
+          <p class="format-card__body">
+            Two bowlers share a pair; four Baker-style team games plus two regular team games (six total on the scorecard). Team total pinfall seeds the bracket. Substitutes allowed before Week 1 only.
+          </p>
+          <ul class="format-card__meta">
+            <li><span class="format-card__label">Games</span> 4 Baker + 2 team</li>
+            <li><span class="format-card__label">Roster</span> 2</li>
+          </ul>
+        </article>
+      </li>
+      <li>
+        <article class="card format-card card--featured">
+          <p class="format-card__badge" aria-hidden="true">3</p>
+          <h3 class="format-card__title">Trios</h3>
+          <p class="format-card__tagline">Most popular · three-person teams</p>
+          <p class="format-card__body">
+            Three bowlers on one team: three Baker games and three team games for a six-game set. Highest team average breaks ties. Great for house leagues rolling into the open — one lineup per squad.
+          </p>
+          <ul class="format-card__meta">
+            <li><span class="format-card__label">Games</span> 3 Baker + 3 team</li>
+            <li><span class="format-card__label">Roster</span> 3</li>
+          </ul>
+        </article>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="section section--standings" id="standings" aria-labelledby="standings-heading">
+  <div class="section__inner section__inner--wide">
+    <header class="section__header">
+      <p class="section__eyebrow">Live snapshot</p>
+      <h2 id="standings-heading" class="section__title">Leaderboard</h2>
+      <p class="section__intro">
+        Team average after Week 2 qualifiers. Top 16 by combined pinfall advance to playoffs.
+      </p>
+    </header>
+
+    <div class="standings" role="region" aria-label="Current standings">
+      <table class="standings__table">
+        <caption class="visually-hidden">Team standings by average score</caption>
+        <thead>
+          <tr>
+            <th scope="col">Rank</th>
+            <th scope="col">Team</th>
+            <th scope="col">Avg</th>
+            <th scope="col">W–L</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="standings__rank"><span class="standings__medal" aria-label="First place">1</span></td>
+            <td class="standings__team">Split Happens</td>
+            <td class="standings__num">218.4</td>
+            <td class="standings__num">8–0</td>
+          </tr>
+          <tr>
+            <td class="standings__rank">2</td>
+            <td class="standings__team">Gutter Done</td>
+            <td class="standings__num">214.1</td>
+            <td class="standings__num">7–1</td>
+          </tr>
+          <tr>
+            <td class="standings__rank">3</td>
+            <td class="standings__team">Pin It to Win It</td>
+            <td class="standings__num">211.7</td>
+            <td class="standings__num">6–2</td>
+          </tr>
+          <tr>
+            <td class="standings__rank">4</td>
+            <td class="standings__team">Alley Oops</td>
+            <td class="standings__num">209.3</td>
+            <td class="standings__num">6–2</td>
+          </tr>
+          <tr class="standings__row--cut">
+            <td class="standings__rank">16</td>
+            <td class="standings__team">Line in the Sand</td>
+            <td class="standings__num">198.0</td>
+            <td class="standings__num">4–4</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="standings__note">Cut line shown — positions 5–15 omitted for brevity.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section section--gallery" id="gallery" aria-labelledby="gallery-heading">
+  <div class="section__inner section__inner--wide">
+    <header class="section__header">
+      <p class="section__eyebrow">The Arena</p>
+      <h2 id="gallery-heading" class="section__title">Moments from the lanes</h2>
+      <p class="section__intro">
+        High-stakes competition meets world-class facilities. A look inside the Metro Lanes experience.
+      </p>
+    </header>
+
+    <ul class="gallery-grid">
+      <li class="gallery-item">
+        <img src="{% static 'core/img/gallery-1.jpg' %}" alt="Close up of a bowling strike" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-tag">Qualifiers</span>
+          <h3 class="gallery-caption">Precision Strikes</h3>
+        </div>
+      </li>
+      <li class="gallery-item">
+        <img src="{% static 'core/img/gallery-2.jpg' %}" alt="Modern bowling lanes with neon lighting" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-tag">The Venue</span>
+          <h3 class="gallery-caption">Midnight Glow</h3>
+        </div>
+      </li>
+      <li class="gallery-item">
+        <img src="{% static 'core/img/gallery-3.jpg' %}" alt="Professional bowler mid-throw" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-tag">Pro Action</span>
+          <h3 class="gallery-caption">Perfect Form</h3>
+        </div>
+      </li>
+      <li class="gallery-item">
+        <img src="{% static 'core/img/gallery-4.jpg' %}" alt="Team celebrating a win" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-tag">Championship</span>
+          <h3 class="gallery-caption">Victory Moment</h3>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="section section--faq" id="faq" aria-labelledby="faq-heading">
+  <div class="section__inner">
+    <header class="section__header">
+      <p class="section__eyebrow">Help desk</p>
+      <h2 id="faq-heading" class="section__title">FAQ</h2>
+      <p class="section__intro">
+        Quick answers for bowlers entering the Metro Open. Full rules live in the rulebook at check-in.
+      </p>
+    </header>
+
+    <div class="faq-list">
+      <details class="faq-item card">
+        <summary class="faq-item__q">Can I bowl more than one format?</summary>
+        <p class="faq-item__a">Yes — you may enter singles plus one doubles <em>or</em> one trios team. You cannot roster on two doubles or two trios squads.</p>
+      </details>
+      <details class="faq-item card">
+        <summary class="faq-item__q">How does handicap work?</summary>
+        <p class="faq-item__a">Singles handicap is 90% of the difference between your entering average and 220, capped at 30 pins per game. Doubles and trios use combined team entering averages unless you declare scratch only at registration.</p>
+      </details>
+      <details class="faq-item card">
+        <summary class="faq-item__q">What if I need a substitute?</summary>
+        <p class="faq-item__a">Doubles and trios may replace a rostered bowler before Week 1 only, with TD approval and a $15 admin fee. No subs once bracket play begins.</p>
+      </details>
+      <details class="faq-item card">
+        <summary class="faq-item__q">Are refunds available?</summary>
+        <p class="faq-item__a">Full refund if you withdraw seven or more days before your first block. Within seven days, credit toward a future Metro Lanes event only — no cash refunds.</p>
+      </details>
+      <details class="faq-item card">
+        <summary class="faq-item__q">What equipment is allowed?</summary>
+        <p class="faq-item__a">USBC equipment rules apply. No balance holes; thumb slugs and interchangeable thumbs OK. Inspectors may spot-check before finals.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="section section--contact" id="contact" aria-labelledby="contact-heading">
+  <div class="section__inner section__inner--wide">
+    <header class="section__header">
+      <p class="section__eyebrow">Get in touch</p>
+      <h2 id="contact-heading" class="section__title">Contact us</h2>
+      <p class="section__intro">
+        Questions about registration, squads, or sponsorship — reach the tournament desk. We reply within one business day.
+      </p>
+    </header>
+
+    <div class="contact-grid">
+      <ul class="contact-chips">
+        <li>
+          <a class="card contact-chip" href="mailto:info@metrolanes.com?subject=Metro%20Open%202026">
+            <span class="contact-chip__label">Email</span>
+            <span class="contact-chip__value">info@metrolanes.com</span>
+          </a>
+        </li>
+        <li>
+          <a class="card contact-chip" href="tel:+15555550123">
+            <span class="contact-chip__label">Phone</span>
+            <span class="contact-chip__value">(555) 555-0123</span>
+          </a>
+        </li>
+        <li>
+          <a class="card contact-chip" href="https://maps.google.com/?q=452+Commerce+Blvd+Industrial+District+NY" target="_blank" rel="noopener noreferrer">
+            <span class="contact-chip__label">Venue</span>
+            <span class="contact-chip__value">Metro Bowl Arena · map</span>
+          </a>
+        </li>
+      </ul>
+      <div class="card contact-hours">
+        <h3 class="contact-hours__title">Desk hours</h3>
+        <ul class="contact-hours__list">
+          <li><span>Mon–Fri</span> <span>4:00 PM – 10:00 PM</span></li>
+          <li><span>Sat–Sun</span> <span>10:00 AM – 11:00 PM</span></li>
+        </ul>
+        <p class="contact-hours__note">During event weekends, staff opens two hours before the first squad.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--register" id="register" aria-labelledby="register-heading">
+  <div class="section__inner section__inner--wide">
+    <header class="section__header">
+      <p class="section__eyebrow">Join the field</p>
+      <h2 id="register-heading" class="section__title">Register</h2>
+      <p class="section__intro">
+        Entry closes <strong>April 10, 2026</strong> or when divisions sell out. Pay at the counter or by invoice for house accounts.
+      </p>
+    </header>
+
+    <div class="register-layout">
+      <div class="card register-fees">
+        <h3 class="register-fees__title">Entry fees</h3>
+        <table class="register-fees__table">
+          <tbody>
+            <tr>
+              <th scope="row">Singles</th>
+              <td>$95</td>
+            </tr>
+            <tr>
+              <th scope="row">Doubles <span class="register-fees__hint">(per team)</span></th>
+              <td>$160</td>
+            </tr>
+            <tr>
+              <th scope="row">Trios <span class="register-fees__hint">(per team)</span></th>
+              <td>$210</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="register-fees__note">USBC sanction fee included. Optional practice pass $25 (subject to lane availability).</p>
+      </div>
+      <div class="card register-steps">
+        <h3 class="register-steps__title">How to enter</h3>
+        <ol class="register-steps__list">
+          <li>Pick your format and teammates (rosters lock before Week 1).</li>
+          <li>Email the desk with team name, division, and bowler names.</li>
+          <li>Pay entry by deadline; you’ll receive squad assignment and rule PDF.</li>
+          <li>Show ID and proof of average at check-in for handicap events.</li>
+        </ol>
+        <a class="btn btn--primary register-steps__cta" href="mailto:register@metrolanes.com?subject=Metro%20Open%202026%20registration&amp;body=Format%3A%0ATeam%20name%3A%0ABowler%20names%20%2B%20USBC%20%23s%3A">Email to register</a>
+        <p class="register-steps__alt">Or call <a href="tel:+15555550123">(555) 555-0123</a> ext. 4 during desk hours.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

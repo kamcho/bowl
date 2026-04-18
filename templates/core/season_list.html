@@ -1,0 +1,66 @@
+{% extends "core/base.html" %}
+
+{% block title %}Seasons | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="manage-section">
+  <div class="manage-inner">
+    <header class="manage-header">
+      <div>
+        <p class="manage-header__eyebrow">Manage</p>
+        <h1 class="manage-header__title">Seasons</h1>
+      </div>
+      <a class="btn btn--primary" href="{% url 'season_create' %}">+ New Season</a>
+    </header>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="manage-toast manage-toast--{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    {% if seasons %}
+    <div class="manage-table-wrap">
+      <table class="manage-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Registration</th>
+            <th>Status</th>
+            <th class="manage-table__actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in seasons %}
+          <tr>
+            <td class="manage-table__primary">{{ s.name }}</td>
+            <td>{{ s.start_date|date:"M d, Y" }}</td>
+            <td>{{ s.end_date|date:"M d, Y" }}</td>
+            <td>{{ s.register_start_date|date:"M d" }} – {{ s.register_end_date|date:"M d" }}</td>
+            <td>
+              {% if s.is_active %}
+                <span class="badge badge--active">Active</span>
+              {% else %}
+                <span class="badge badge--inactive">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="manage-table__actions">
+              <a href="{% url 'season_edit' s.pk %}" class="manage-action">Edit</a>
+              <a href="{% url 'season_delete' s.pk %}" class="manage-action manage-action--danger">Delete</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="manage-empty">
+        <p>No seasons created yet.</p>
+        <a class="btn btn--primary" href="{% url 'season_create' %}">Create First Season</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

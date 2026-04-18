@@ -1,0 +1,56 @@
+{% extends "core/base.html" %}
+
+{% block title %}Game Rules | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="manage-section">
+  <div class="manage-inner">
+    <header class="manage-header">
+      <div>
+        <p class="manage-header__eyebrow">Manage</p>
+        <h1 class="manage-header__title">Game Rules</h1>
+      </div>
+      <a class="btn btn--primary" href="{% url 'gamerules_create' %}">+ New Rule</a>
+    </header>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="manage-toast manage-toast--{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    {% if rules %}
+    <div class="manage-table-wrap">
+      <table class="manage-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Participation</th>
+            <th>Rule</th>
+            <th class="manage-table__actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rules %}
+          <tr>
+            <td>{{ r.order }}</td>
+            <td class="manage-table__primary">{{ r.game_type }}</td>
+            <td class="manage-table__desc">{{ r.rules|truncatewords:25 }}</td>
+            <td class="manage-table__actions">
+              <a href="{% url 'gamerules_edit' r.pk %}" class="manage-action">Edit</a>
+              <a href="{% url 'gamerules_delete' r.pk %}" class="manage-action manage-action--danger">Delete</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="manage-empty">
+        <p>No rules created yet.</p>
+        <a class="btn btn--primary" href="{% url 'gamerules_create' %}">Create First Rule</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

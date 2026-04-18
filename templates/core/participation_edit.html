@@ -1,0 +1,591 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ title }} | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+
+  <!-- Dashboard Header -->
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div class="dash-header__greeting">
+        <p class="dash-header__eyebrow">Participation Settings</p>
+        <h1 class="dash-header__title">{{ title }}</h1>
+      </div>
+      <div class="dash-header__actions">
+        <a class="btn btn--ghost" href="{% url 'admin_dashboard' %}?season={{ participation.season.id }}">← Back to Admin Dash</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-content">
+    
+    <!-- Stats Row -->
+    <div class="dash-stats" style="margin-bottom: 2rem;">
+      {% if is_single %}
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Enrolled Users</p>
+        <p class="dash-stat__value">{{ enrolled_users_count }}</p>
+      </div>
+      {% else %}
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Enrolled Teams</p>
+        <p class="dash-stat__value">{{ enrolled_teams_count }}</p>
+      </div>
+      {% endif %}
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Category Charge</p>
+        <p class="dash-stat__value">${{ participation.charge|floatformat:2 }}</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Generated Revenue</p>
+        <p class="dash-stat__value" style="color: #34a853;">${{ revenue|floatformat:2 }}</p>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="non-field-errors" style="{% if message.tags == 'success' %}background:rgba(52,168,83,.1);border-color:rgba(52,168,83,.25);color:#34a853{% endif %}; margin-bottom: 1.5rem;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" class="auth-form" style="max-width: none;">
+      {% csrf_token %}
+      
+      <!-- Enrollments Panel (Full Width) -->
+      <div class="dash-card card" style="margin-bottom: 2rem;">
+        <div class="dash-card__header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 class="dash-card__title">Manage {% if is_single %}Users{% else %}Teams{% endif %}</h2>
+          <div>
+            <button type="button" class="btn btn--ghost" onclick="openDrawer()" style="margin-right: 0.5rem;">⚙️ Edit Core Details</button>
+            <button type="submit" class="btn btn--primary">Save All Changes</button>
+          </div>
+        </div>
+        <div class="dash-card__body">
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
+            Hold down <strong>Ctrl</strong> (Windows) or <strong>Cmd</strong> (Mac) to select multiple options.
+          </p>
+
+          <div class="dash-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
+            
+            {% if is_single %}
+            <!-- Users -->
+            <div class="form-group" style="margin: 0;">
+              <label for="{{ form.enrolled_users.id_for_label }}" class="form-label">Enrolled Users</label>
+              {{ form.enrolled_users.errors }}
+              <div class="enrollment-list-wrapper">
+                {{ form.enrolled_users }}
+              </div>
+            </div>
+            <div style="display: none;">{{ form.enrolled_teams }}</div>
+            {% else %}
+            <!-- Teams -->
+            <div class="form-group" style="margin: 0;">
+              <label for="{{ form.enrolled_teams.id_for_label }}" class="form-label">Enrolled Teams</label>
+              {{ form.enrolled_teams.errors }}
+              <div class="enrollment-list-wrapper">
+                {{ form.enrolled_teams }}
+              </div>
+            </div>
+            <div style="display: none;">{{ form.enrolled_users }}</div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Drawer (Hidden by default) -->
+      <div id="settings-backdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; backdrop-filter: blur(2px);" onclick="closeDrawer()"></div>
+      <div id="settings-drawer" class="drawer" style="position: fixed; top: 0; right: -400px; width: 400px; max-width: 100vw; height: 100%; background: var(--bg-deep); z-index: 101; padding: 2rem; box-shadow: -5px 0 25px rgba(0,0,0,0.5); transition: right 0.3s ease-in-out; overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.05);">
+        <button type="button" onclick="closeDrawer()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        <h2 style="margin: 0 0 2rem; color: var(--text-light); font-size: 1.25rem;">Core Details</h2>
+        
+        {% if form.non_field_errors %}
+          <div class="non-field-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-group">
+          <label for="{{ form.season.id_for_label }}" class="form-label">{{ form.season.label }}</label>
+          {{ form.season }}
+          {{ form.season.errors }}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.game_type.id_for_label }}" class="form-label">{{ form.game_type.label }}</label>
+          {{ form.game_type }}
+          {{ form.game_type.errors }}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.name.id_for_label }}" class="form-label">Category Name</label>
+          {{ form.name }}
+          {{ form.name.errors }}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.charge.id_for_label }}" class="form-label">{{ form.charge.label }}</label>
+          {{ form.charge }}
+          {{ form.charge.errors }}
+        </div>
+        
+        <div style="margin-top: 2rem;">
+          <button type="button" class="btn btn--primary btn--full" onclick="closeDrawer()">Done Editing</button>
+        </div>
+      </div>
+
+    </form>
+
+    {% if user.is_staff %}
+    <div class="dash-card card" style="margin-top: 1.5rem;">
+      <div class="dash-card__header">
+        <h2 class="dash-card__title">Rounds &amp; bracket</h2>
+      </div>
+      <div class="dash-card__body" style="padding-top: 0;">
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+          Create a <strong>new round</strong> (later dates than earlier rounds if this is the next stage). Then <strong>promote winners</strong> from a finished round into the next empty round &mdash; pairings are built from each match&rsquo;s higher total (ties and unplayed matches are skipped).
+        </p>
+        <div style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+          <div style="border: 1px solid rgba(255,255,255,0.08); border-radius: 0.5rem; padding: 1rem 1.25rem; background: rgba(0,0,0,0.15);">
+            <h3 style="margin: 0 0 0.75rem; font-size: 1rem; color: var(--text-light);">New round</h3>
+            <form method="post" action="{% url 'participation_round_create' participation.pk %}">
+              {% csrf_token %}
+              <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label class="form-label" for="{{ round_create_form.name.id_for_label }}">Name</label>
+                {{ round_create_form.name }}
+              </div>
+              <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label class="form-label" for="{{ round_create_form.start_date.id_for_label }}">Start</label>
+                {{ round_create_form.start_date }}
+              </div>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="{{ round_create_form.end_date.id_for_label }}">End</label>
+                {{ round_create_form.end_date }}
+              </div>
+              <button type="submit" class="btn btn--primary" style="width: 100%;">Create round</button>
+            </form>
+          </div>
+          {% if rounds %}
+          <div style="border: 1px solid rgba(255,255,255,0.08); border-radius: 0.5rem; padding: 1rem 1.25rem; background: rgba(0,0,0,0.15);">
+            <h3 style="margin: 0 0 0.75rem; font-size: 1rem; color: var(--text-light);">Promote winners</h3>
+            <form method="post" action="{% url 'participation_promote_winners' participation.pk %}">
+              {% csrf_token %}
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="{{ promote_form.from_round.id_for_label }}">{{ promote_form.from_round.label }}</label>
+                {{ promote_form.from_round }}
+              </div>
+              <button type="submit" class="btn btn--primary" style="width: 100%;">Pair winners into next empty round</button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    <!-- Rounds Data as Tabs -->
+    <div class="dash-card card" style="margin-top: 1.5rem;">
+      <div class="dash-card__header" style="border-bottom: none; padding-bottom: 0;">
+        <h2 class="dash-card__title" style="margin-bottom: 1rem;">Scheduled Rounds</h2>
+      </div>
+      
+      {% if rounds %}
+      <!-- Tab Headers -->
+      <div class="tabs-header" style="display: flex; gap: 0.5rem; padding: 0 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); overflow-x: auto;">
+        {% for r in rounds %}
+        <button type="button" class="tab-btn {% if forloop.first %}active{% endif %}" onclick="openTab(event, 'round-{{ r.id }}')" style="background: none; border: none; border-bottom: 2px solid {% if forloop.first %}var(--accent){% else %}transparent{% endif %}; color: {% if forloop.first %}var(--text-light){% else %}var(--text-muted){% endif %}; padding: 0.75rem 1rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+          {{ r.name }}{% if is_single %} <span style="font-weight:500;opacity:0.75;">({{ r.singles_match_count }})</span>{% else %} <span style="font-weight:500;opacity:0.75;">({{ r.team_match_count }})</span>{% endif %}
+        </button>
+        {% endfor %}
+      </div>
+
+      <!-- Tab Content (each round loaded on demand via participation_round_panel) -->
+      <div class="tabs-content" style="padding: 1.5rem;">
+        {% for r in rounds %}
+        <div id="round-{{ r.id }}" class="tab-pane"
+             data-panel-url="{% url 'participation_round_panel' participation.pk r.id %}"
+             style="display: {% if forloop.first %}block{% else %}none{% endif %};">
+          <div class="round-panel-loading" style="padding: 2rem; text-align: center; color: var(--text-muted);">Loading round…</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="dash-card__body">
+        <p style="text-align: center; color: var(--text-muted); padding: 2rem 0;">No rounds scheduled for this category yet.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+
+<script>
+function loadRoundPanel(pane) {
+  if (!pane || pane.dataset.loaded === '1') return;
+  var url = pane.dataset.panelUrl;
+  if (!url) return;
+  fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function(res) {
+      if (!res.ok) throw new Error('load failed');
+      return res.text();
+    })
+    .then(function(html) {
+      pane.innerHTML = html;
+      pane.dataset.loaded = '1';
+    })
+    .catch(function() {
+      pane.innerHTML = '<p style="padding:1.5rem;color:#ea4335;text-align:center;">Could not load this round.</p>';
+      pane.dataset.loaded = '1';
+    });
+}
+
+function openTab(evt, tabId) {
+  var tabPanes = document.getElementsByClassName("tab-pane");
+  for (var i = 0; i < tabPanes.length; i++) {
+    tabPanes[i].style.display = "none";
+  }
+
+  var tabBtns = document.getElementsByClassName("tab-btn");
+  for (var j = 0; j < tabBtns.length; j++) {
+    tabBtns[j].classList.remove("active");
+    tabBtns[j].style.borderBottomColor = "transparent";
+    tabBtns[j].style.color = "var(--text-muted)";
+  }
+
+  var pane = document.getElementById(tabId);
+  if (pane) {
+    pane.style.display = "block";
+    loadRoundPanel(pane);
+  }
+  evt.currentTarget.classList.add("active");
+  evt.currentTarget.style.borderBottomColor = "var(--accent)";
+  evt.currentTarget.style.color = "var(--text-light)";
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var first = document.querySelector('.tab-pane[data-panel-url]');
+  if (first) loadRoundPanel(first);
+});
+
+function openChallengeModal(title, p1, p2, s1, s2, winner, challengeId, challengeType, startLocal, endLocal) {
+  document.getElementById('modal-title').innerText = title;
+  document.getElementById('modal-p1').innerText = p1;
+  document.getElementById('modal-p2').innerText = p2;
+  document.getElementById('modal-s1').innerText = s1;
+  document.getElementById('modal-s2').innerText = s2;
+  var w = document.getElementById('modal-winner-wrap');
+  if (winner && winner.length) {
+    w.style.display = 'block';
+    document.getElementById('modal-winner').innerText = winner;
+  } else {
+    w.style.display = 'none';
+  }
+  document.getElementById('modal-challenge-id').value = challengeId;
+  document.getElementById('modal-challenge-type').value = challengeType;
+  var si = document.getElementById('modal-start-input');
+  var ei = document.getElementById('modal-end-input');
+  if (si) si.value = startLocal || '';
+  if (ei) ei.value = endLocal || '';
+  var msg = document.getElementById('modal-schedule-msg');
+  if (msg) { msg.innerText = ''; msg.style.color = ''; }
+  var scoreLink = document.getElementById('modal-score-link');
+  var scoreHint = document.getElementById('modal-score-hint');
+  if (scoreLink) {
+    scoreLink.href = challengeType === 'singles'
+      ? '{% url "match_score_singles" participation.pk 888888888 %}'.replace('888888888', String(challengeId))
+      : '{% url "match_score_team" participation.pk 888888888 %}'.replace('888888888', String(challengeId));
+    scoreLink.innerText = challengeType === 'singles'
+      ? 'Open singles scoring (frames & rolls)'
+      : 'Open team scoring (frames & rolls)';
+  }
+  if (scoreHint) {
+    scoreHint.innerText = challengeType === 'singles'
+      ? 'Singles: each bowler has their own 10 frames; pins are tracked per player.'
+      : 'Teams: each team has one 10-frame line; frames are stored on the team (captain on record).';
+  }
+  document.getElementById('challenge-modal').style.display = 'flex';
+}
+
+function saveChallengeSchedule(ev) {
+  if (ev) ev.preventDefault();
+  var id = document.getElementById('modal-challenge-id').value;
+  var type = document.getElementById('modal-challenge-type').value;
+  var start = document.getElementById('modal-start-input').value;
+  var end = document.getElementById('modal-end-input').value;
+  var msg = document.getElementById('modal-schedule-msg');
+  var url = type === 'singles'
+    ? '{% url "participation_singles_challenge_schedule" participation.pk 888888888 %}'.replace('888888888', id)
+    : '{% url "participation_team_challenge_schedule" participation.pk 888888888 %}'.replace('888888888', id);
+  var fd = new FormData();
+  fd.append('start_datetime', start);
+  fd.append('end_datetime', end);
+  var token = document.querySelector('[name=csrfmiddlewaretoken]');
+  if (token) fd.append('csrfmiddlewaretoken', token.value);
+  fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, j: j }; }); })
+    .then(function(o) {
+      if (o.ok && o.j.ok) {
+        msg.style.color = '#34a853';
+        msg.innerText = 'Schedule saved.';
+      } else {
+        msg.style.color = '#ea4335';
+        msg.innerText = (o.j && o.j.error) ? o.j.error : 'Could not save.';
+      }
+    })
+    .catch(function() {
+      msg.style.color = '#ea4335';
+      msg.innerText = 'Could not save.';
+    });
+  return false;
+}
+
+function closeChallengeModal() {
+  document.getElementById('challenge-modal').style.display = 'none';
+}
+
+function openDrawer() {
+  document.getElementById('settings-backdrop').style.display = 'block';
+  setTimeout(() => {
+    document.getElementById('settings-drawer').style.right = '0';
+  }, 10);
+}
+
+function closeDrawer() {
+  document.getElementById('settings-drawer').style.right = '-400px';
+  setTimeout(() => {
+    document.getElementById('settings-backdrop').style.display = 'none';
+  }, 300);
+}
+</script>
+
+<!-- Challenge Detail Modal -->
+<div id="challenge-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+  <div class="dash-card card" style="width: 100%; max-width: 440px; padding: 2rem; position: relative;">
+    <button onclick="closeChallengeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+    
+    <h3 id="modal-title" style="margin: 0 0 1.5rem; text-align: center; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.9rem;">Match Details</h3>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(255,255,255,0.03); padding: 1.5rem 1rem; border-radius: 0.5rem; position: relative;">
+      
+      <!-- Player 1 -->
+      <div style="width: 40%; text-align: right;">
+        <div id="modal-p1" style="font-weight: 600; font-size: 1.1rem; word-wrap: break-word; margin-bottom: 0.5rem;"></div>
+        <div id="modal-s1" style="font-size: 1.5rem; font-weight: 800; color: var(--accent);"></div>
+      </div>
+      
+      <!-- VS -->
+      <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; width: 20%; text-align: center;">VS</div>
+      
+      <!-- Player 2 -->
+      <div style="width: 40%; text-align: left;">
+        <div id="modal-p2" style="font-weight: 600; font-size: 1.1rem; word-wrap: break-word; margin-bottom: 0.5rem;"></div>
+        <div id="modal-s2" style="font-size: 1.5rem; font-weight: 800; color: var(--accent);"></div>
+      </div>
+
+    </div>
+
+    <div id="modal-winner-wrap" style="display: none; margin-bottom: 1rem; text-align: center; padding: 0.65rem 1rem; background: rgba(52,168,83,0.12); border-radius: 0.5rem; border: 1px solid rgba(52,168,83,0.25);">
+      <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Winner</span>
+      <p id="modal-winner" style="margin: 0.25rem 0 0; font-size: 1.05rem; font-weight: 700; color: #34a853;"></p>
+    </div>
+    
+    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.05);">
+      <input type="hidden" id="modal-challenge-id" value="" />
+      <input type="hidden" id="modal-challenge-type" value="" />
+      <p style="margin: 0 0 0.5rem; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Scheduled Start</p>
+      <input type="datetime-local" id="modal-start-input" class="modal-schedule-input" {% if not user.is_staff %}readonly{% endif %} style="width: 100%; box-sizing: border-box; margin: 0 0 1rem; padding: 0.5rem 0.65rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.15); color: var(--text-light); border-radius: 0.5rem; font-size: 0.9rem;" />
+      <p style="margin: 0 0 0.5rem; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Scheduled End</p>
+      <input type="datetime-local" id="modal-end-input" class="modal-schedule-input" {% if not user.is_staff %}readonly{% endif %} style="width: 100%; box-sizing: border-box; margin: 0 0 0.75rem; padding: 0.5rem 0.65rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.15); color: var(--text-light); border-radius: 0.5rem; font-size: 0.9rem;" />
+      <p id="modal-schedule-msg" style="margin: 0 0 0.5rem; font-size: 0.8rem; min-height: 1.2em;"></p>
+      {% if user.is_staff %}
+      <button type="button" class="btn btn--primary" style="width: 100%;" onclick="saveChallengeSchedule(event)">Save times</button>
+      <a id="modal-score-link" href="#" class="btn btn--ghost" style="display: block; width: 100%; text-align: center; margin-top: 0.75rem; box-sizing: border-box; text-decoration: none;">Open scoring — frames &amp; rolls</a>
+      <p id="modal-score-hint" style="margin: 0.5rem 0 0; font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; text-align: center;">Singles: two bowler lines (one score sheet per player). Teams: two team lines (scores count for the whole team).</p>
+      {% endif %}
+    </div>
+    
+  </div>
+</div>
+
+<style>
+  .enrollment-list-wrapper {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    height: 100%;
+  }
+  
+  .dual-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .dual-list-box {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  .dual-list-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .select-search-input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.75rem;
+    background-color: var(--bg-deep);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-light);
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .select-search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+  }
+
+  .item-list {
+    height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+  }
+  .list-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  
+  .btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0 0.25rem;
+    border-radius: 0.25rem;
+  }
+  .btn-icon:hover {
+    color: var(--text-light);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .btn-icon.add:hover { color: #34a853; }
+  .btn-icon.remove:hover { color: #ea4335; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const multiSelects = document.querySelectorAll('select[multiple]');
+  
+  multiSelects.forEach(select => {
+    select.style.display = 'none'; // Hide native select
+    
+    const wrapper = select.parentNode;
+    
+    // Create dual list container
+    const container = document.createElement('div');
+    container.className = 'dual-list-container';
+    
+    // Enrolled box
+    const enrolledBox = document.createElement('div');
+    enrolledBox.className = 'dual-list-box';
+    enrolledBox.innerHTML = `
+      <div class="dual-list-header">Currently Enrolled</div>
+      <input type="text" class="select-search-input enrolled-search" placeholder="Search enrolled...">
+      <div class="item-list enrolled-list"></div>
+    `;
+    
+    // Available box
+    const availableBox = document.createElement('div');
+    availableBox.className = 'dual-list-box';
+    availableBox.innerHTML = `
+      <div class="dual-list-header">Available to Add</div>
+      <input type="text" class="select-search-input available-search" placeholder="Search available...">
+      <div class="item-list available-list"></div>
+    `;
+    
+    container.appendChild(enrolledBox);
+    container.appendChild(availableBox);
+    wrapper.appendChild(container);
+    
+    const enrolledList = enrolledBox.querySelector('.enrolled-list');
+    const availableList = availableBox.querySelector('.available-list');
+    const enrolledSearch = enrolledBox.querySelector('.enrolled-search');
+    const availableSearch = availableBox.querySelector('.available-search');
+    
+    // Function to render lists based on native select state
+    function renderLists() {
+      enrolledList.innerHTML = '';
+      availableList.innerHTML = '';
+      
+      const enrolledFilter = enrolledSearch.value.toLowerCase();
+      const availableFilter = availableSearch.value.toLowerCase();
+      
+      Array.from(select.options).forEach(option => {
+        const text = option.textContent;
+        const value = option.value;
+        const isSelected = option.selected;
+        
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        
+        if (isSelected) {
+          if (text.toLowerCase().includes(enrolledFilter)) {
+            item.innerHTML = `
+              <span>${text}</span>
+              <button type="button" class="btn-icon remove" title="Remove">&times;</button>
+            `;
+            item.querySelector('button').addEventListener('click', (e) => {
+              e.preventDefault();
+              option.selected = false;
+              renderLists();
+            });
+            enrolledList.appendChild(item);
+          }
+        } else {
+          if (text.toLowerCase().includes(availableFilter)) {
+            item.innerHTML = `
+              <span>${text}</span>
+              <button type="button" class="btn-icon add" title="Add">+</button>
+            `;
+            item.querySelector('button').addEventListener('click', (e) => {
+              e.preventDefault();
+              option.selected = true;
+              renderLists();
+            });
+            availableList.appendChild(item);
+          }
+        }
+      });
+      
+      if (enrolledList.children.length === 0) enrolledList.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:0.5rem;">None found</div>';
+      if (availableList.children.length === 0) availableList.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:0.5rem;">None found</div>';
+    }
+    
+    enrolledSearch.addEventListener('input', renderLists);
+    availableSearch.addEventListener('input', renderLists);
+    
+    renderLists(); // Initial render
+  });
+});
+</script>
+{% endblock %}

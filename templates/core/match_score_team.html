@@ -1,0 +1,141 @@
+{% extends "core/base.html" %}
+
+{% block title %}Team scoring — {{ challenge.round.name }} | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div class="dash-header__greeting">
+        <p class="dash-header__eyebrow">Team match</p>
+        <h1 class="dash-header__title">{{ challenge.round.name }}</h1>
+      </div>
+      <div class="dash-header__actions">
+        <a class="btn btn--ghost" href="{% url 'participation_edit' participation.pk %}">← Back to participation</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-content">
+    <div class="dash-card card" style="margin-bottom: 1.5rem;">
+      <div class="dash-card__body">
+        <p style="margin: 0 0 0.75rem; color: var(--text-light); font-size: 1.05rem;">
+          <strong>{{ t1_label }}</strong> vs <strong>{{ t2_label }}</strong>
+        </p>
+        <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">
+          <strong>Teams:</strong> each team has one line of 10 frames for this round. Frames are tied to the team and the captain is stored on each frame for records. Enter team scores the same way as singles (two rolls per frame when applicable); team totals are summed from rolls for that team.
+        </p>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="manage-toast manage-toast--{{ message.tags }}" style="margin-bottom: 1rem;">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      <div class="dash-card card">
+        <div class="dash-card__header">
+          <h2 class="dash-card__title">Frames &amp; rolls</h2>
+        </div>
+        <div class="dash-card__body" style="overflow-x: auto;">
+          <table class="manage-table" style="min-width: 520px;">
+            <thead>
+              <tr>
+                <th>Frame</th>
+                <th colspan="2">{{ t1_label }} — roll 1 / roll 2</th>
+                <th colspan="2">{{ t2_label }} — roll 1 / roll 2</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in score_rows %}
+              <tr>
+                <td style="font-weight: 600;">{{ row.order }}</td>
+                <td><input type="number" inputmode="numeric" name="t1_f{{ row.order }}_r1" value="{{ row.t1_r1 }}" min="0" max="10" class="form-control roll-input" style="width: 4rem; padding: 0.35rem 0.5rem;" /></td>
+                <td><input type="number" inputmode="numeric" name="t1_f{{ row.order }}_r2" value="{{ row.t1_r2 }}" min="0" max="10" class="form-control roll-input" style="width: 4rem; padding: 0.35rem 0.5rem;" /></td>
+                <td><input type="number" inputmode="numeric" name="t2_f{{ row.order }}_r1" value="{{ row.t2_r1 }}" min="0" max="10" class="form-control roll-input" style="width: 4rem; padding: 0.35rem 0.5rem;" /></td>
+                <td><input type="number" inputmode="numeric" name="t2_f{{ row.order }}_r2" value="{{ row.t2_r2 }}" min="0" max="10" class="form-control roll-input" style="width: 4rem; padding: 0.35rem 0.5rem;" /></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="dash-card__body" style="padding-top: 0;">
+          <button type="submit" class="btn btn--primary">Save scores</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+<script>
+(function () {
+  function clamp(n, lo, hi) {
+    if (isNaN(n)) return 0;
+    return Math.max(lo, Math.min(hi, n));
+  }
+  function bindRollPair(r1El, r2El) {
+    function syncFromFirst() {
+      var v1 = clamp(parseInt(r1El.value, 10), 0, 10);
+      r1El.value = v1;
+      if (v1 >= 10) {
+        r2El.value = 0;
+        r2El.readOnly = true;
+        r2El.setAttribute('max', 0);
+        r2El.setAttribute('aria-label', 'Second roll (strike — not used)');
+      } else {
+        r2El.readOnly = false;
+        var max2 = 10 - v1;
+        r2El.setAttribute('max', max2);
+        var v2 = clamp(parseInt(r2El.value, 10), 0, max2);
+        r2El.value = v2;
+        r2El.setAttribute('aria-label', 'Second roll');
+      }
+    }
+    function syncFromSecond() {
+      var v1 = clamp(parseInt(r1El.value, 10), 0, 10);
+      r1El.value = v1;
+      if (v1 >= 10) {
+        r2El.value = 0;
+        r2El.readOnly = true;
+        return;
+      }
+      var max2 = 10 - v1;
+      var v2 = clamp(parseInt(r2El.value, 10), 0, max2);
+      r2El.value = v2;
+      r2El.setAttribute('max', max2);
+    }
+    r1El.addEventListener('input', syncFromFirst);
+    r1El.addEventListener('change', syncFromFirst);
+    r2El.addEventListener('input', syncFromSecond);
+    r2El.addEventListener('change', syncFromSecond);
+    syncFromFirst();
+  }
+  document.querySelectorAll('form.auth-form tbody tr').forEach(function (row) {
+    var inputs = row.querySelectorAll('input.roll-input');
+    if (inputs.length === 4) {
+      bindRollPair(inputs[0], inputs[1]);
+      bindRollPair(inputs[2], inputs[3]);
+    }
+  });
+  document.querySelector('form.auth-form').addEventListener('submit', function (e) {
+    var ok = true;
+    document.querySelectorAll('form.auth-form tbody tr').forEach(function (row) {
+      var inputs = row.querySelectorAll('input.roll-input');
+      if (inputs.length !== 4) return;
+      for (var i = 0; i < 4; i += 2) {
+        var a = clamp(parseInt(inputs[i].value, 10), 0, 10);
+        var b = clamp(parseInt(inputs[i + 1].value, 10), 0, 10);
+        if (a < 10 && a + b > 10) ok = false;
+        if (a >= 10 && b !== 0) ok = false;
+      }
+    });
+    if (!ok) {
+      e.preventDefault();
+      alert('Each frame must have at most 10 pins total (strike uses 0 for roll 2).');
+    }
+  });
+})();
+</script>
+{% endblock %}

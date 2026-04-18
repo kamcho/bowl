@@ -1,0 +1,139 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+
+  <!-- Dashboard Header -->
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div class="dash-header__greeting">
+        <p class="dash-header__eyebrow">Welcome back</p>
+        <h1 class="dash-header__title">{{ user.first_name }} {{ user.last_name }}</h1>
+        <p class="dash-header__email">{{ user.email }}</p>
+      </div>
+      <div class="dash-header__actions">
+        <a class="btn btn--ghost" href="{% url 'home' %}">← Back to Site</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="dash-content">
+    <div class="dash-stats">
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Total Games</p>
+        <p class="dash-stat__value">0</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">High Score</p>
+        <p class="dash-stat__value">—</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Average</p>
+        <p class="dash-stat__value">—</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Team</p>
+        <p class="dash-stat__value">Free Agent</p>
+      </div>
+    </div>
+
+    <!-- Two-Column Layout -->
+    <div class="dash-grid">
+
+      <!-- Profile Card -->
+      <div class="dash-card card">
+        <div class="dash-card__header">
+          <h2 class="dash-card__title">Profile</h2>
+          <a href="{% url 'complete_profile' %}" class="dash-card__action">Edit</a>
+        </div>
+        <div class="dash-card__body">
+          <div class="profile-avatar">
+            <span class="profile-avatar__initials">{{ user.first_name.0 }}{{ user.last_name.0 }}</span>
+          </div>
+          <dl class="profile-details">
+            <div class="profile-detail">
+              <dt>Full Name</dt>
+              <dd>{{ user.first_name }} {{ user.last_name }}</dd>
+            </div>
+            <div class="profile-detail">
+              <dt>Email</dt>
+              <dd>{{ user.email }}</dd>
+            </div>
+            <div class="profile-detail">
+              <dt>Gender</dt>
+              <dd>{{ user.get_gender_display|default:"Not set" }}</dd>
+            </div>
+            <div class="profile-detail">
+              <dt>Primary Phone</dt>
+              <dd>{{ user.primary_phone|default:"Not set" }}</dd>
+            </div>
+            <div class="profile-detail">
+              <dt>Secondary Phone</dt>
+              <dd>{{ user.secondary_phone|default:"Not set" }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Quick Links Card -->
+      <div class="dash-card card">
+        <div class="dash-card__header">
+          <h2 class="dash-card__title">Quick Links</h2>
+        </div>
+        <div class="dash-card__body">
+          <nav class="dash-links">
+            <a href="#" class="dash-links__item">
+              <span class="dash-links__icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+              <span class="dash-links__text">Find a Team</span>
+            </a>
+            <a href="#schedule" class="dash-links__item">
+              <span class="dash-links__icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </span>
+              <span class="dash-links__text">View Schedule</span>
+            </a>
+            <a href="#standings" class="dash-links__item">
+              <span class="dash-links__icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </span>
+              <span class="dash-links__text">Standings</span>
+            </a>
+            <a href="#" class="dash-links__item">
+              <span class="dash-links__icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </span>
+              <span class="dash-links__text">Account Settings</span>
+            </a>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Activity Feed Card -->
+      <div class="dash-card card" style="grid-column: 1 / -1;">
+        <div class="dash-card__header">
+          <h2 class="dash-card__title">Recent Activity</h2>
+        </div>
+        <div class="dash-card__body">
+          <div class="dash-empty">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="12" r="5" fill="currentColor" opacity="0.2"/>
+              <circle cx="14" cy="26" r="5" fill="currentColor" opacity="0.2"/>
+              <circle cx="34" cy="26" r="5" fill="currentColor" opacity="0.2"/>
+              <circle cx="24" cy="38" r="5" fill="currentColor" opacity="0.2"/>
+            </svg>
+            <p class="dash-empty__text">No games played yet</p>
+            <p class="dash-empty__hint">Join a team and start competing to see your stats here.</p>
+            <a href="#game-types" class="btn btn--primary" style="margin-top: 1rem;">Browse Formats</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

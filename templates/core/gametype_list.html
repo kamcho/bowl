@@ -1,0 +1,54 @@
+{% extends "core/base.html" %}
+
+{% block title %}Game Types | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="manage-section">
+  <div class="manage-inner">
+    <header class="manage-header">
+      <div>
+        <p class="manage-header__eyebrow">Manage</p>
+        <h1 class="manage-header__title">Game Types</h1>
+      </div>
+      <a class="btn btn--primary" href="{% url 'gametype_create' %}">+ New Game Type</a>
+    </header>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="manage-toast manage-toast--{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    {% if game_types %}
+    <div class="manage-table-wrap">
+      <table class="manage-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th class="manage-table__actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for gt in game_types %}
+          <tr>
+            <td class="manage-table__primary">{{ gt.name }}</td>
+            <td class="manage-table__desc">{{ gt.description|truncatewords:20 }}</td>
+            <td class="manage-table__actions">
+              <a href="{% url 'gametype_edit' gt.pk %}" class="manage-action">Edit</a>
+              <a href="{% url 'gametype_delete' gt.pk %}" class="manage-action manage-action--danger">Delete</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="manage-empty">
+        <p>No game types created yet.</p>
+        <a class="btn btn--primary" href="{% url 'gametype_create' %}">Create First Game Type</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

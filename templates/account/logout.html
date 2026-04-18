@@ -1,0 +1,26 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Sign Out" %} | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="account-section">
+  <div class="auth-card">
+    <header class="auth-card__header">
+      <h1 class="auth-card__title">Sign Out</h1>
+      <p class="auth-card__subtitle">Are you sure you want to sign out?</p>
+    </header>
+
+    <form method="post" action="{% url 'account_logout' %}" class="auth-form">
+      {% csrf_token %}
+      {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+      {% endif %}
+      <button class="btn btn--primary btn--full" type="submit">{% trans "Sign Out" %}</button>
+      <div class="auth-card__footer">
+        <a class="auth-card__link" href="/">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

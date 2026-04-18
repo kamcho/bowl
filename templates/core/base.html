@@ -1,0 +1,147 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Metro Lanes Open{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'core/css/site.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="{% url 'home' %}">
+        <span class="brand__mark" aria-hidden="true">
+          <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="12" r="5" fill="currentColor"/>
+            <circle cx="14" cy="26" r="5" fill="currentColor"/>
+            <circle cx="34" cy="26" r="5" fill="currentColor"/>
+            <circle cx="24" cy="38" r="5" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="brand__text">
+          <span class="brand__name">Metro Lanes</span>
+          <span class="brand__tag">Open Championship</span>
+        </span>
+      </a>
+
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true" tabindex="-1">
+      <label for="nav-toggle" class="nav-toggle-label">
+        <span class="nav-toggle-label__text">Menu</span>
+        <span class="nav-toggle-label__bars" aria-hidden="true"></span>
+      </label>
+
+      <nav class="nav" aria-label="Primary">
+        <ul class="nav__list">
+          <li><a class="nav__link" href="#schedule">Schedule</a></li>
+          <li><a class="nav__link" href="#game-types">Formats</a></li>
+          <li><a class="nav__link" href="#standings">Standings</a></li>
+          <li><a class="nav__link" href="#gallery">Gallery</a></li>
+          <li><a class="nav__link" href="#faq">FAQ</a></li>
+          <li><a class="nav__link" href="#contact">Contact</a></li>
+          <li><a class="nav__link" href="#rules">Rules</a></li>
+          {% if user.is_authenticated %}
+            {% if user.is_staff %}
+              <li><a class="nav__link nav__link--accent" href="{% url 'admin_dashboard' %}" style="background-color: var(--text-muted); color: var(--bg-deep);">Admin</a></li>
+            {% endif %}
+            <li><a class="nav__link nav__link--accent" href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li><a class="nav__link" href="{% url 'account_logout' %}">Logout</a></li>
+          {% else %}
+            <li><a class="nav__link" href="{% url 'account_login' %}">Login</a></li>
+            <li><a class="nav__link nav__link--accent" href="{% url 'account_signup' %}">Sign Up</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__top">
+        <div class="site-footer__brand">
+          <a class="brand" href="{% url 'home' %}">
+            <span class="brand__mark" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="24" cy="12" r="5" fill="currentColor"/>
+                <circle cx="14" cy="26" r="5" fill="currentColor"/>
+                <circle cx="34" cy="26" r="5" fill="currentColor"/>
+                <circle cx="24" cy="38" r="5" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="brand__text">
+              <span class="brand__name">Metro Lanes</span>
+              <span class="brand__tag">Open Championship</span>
+            </span>
+          </a>
+          <p class="site-footer__brand-text">
+            The premier bowling tournament series in the metro area, bringing together the best talent for an unforgettable competition experience.
+          </p>
+          <div class="site-footer__social">
+            <a href="#" class="social-link" aria-label="Facebook">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+            </a>
+            <a href="#" class="social-link" aria-label="Twitter">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+            </a>
+            <a href="#" class="social-link" aria-label="Instagram">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="site-footer__nav">
+          <h2 class="site-footer__heading">Tournament</h2>
+          <ul class="site-footer__list">
+            <li><a href="#schedule" class="site-footer__link">Schedule</a></li>
+            <li><a href="#game-types" class="site-footer__link">Formats</a></li>
+            <li><a href="#standings" class="site-footer__link">Standings</a></li>
+            <li><a href="#register" class="site-footer__link">Register</a></li>
+            <li><a href="#rules" class="site-footer__link">Rules & Regs</a></li>
+          </ul>
+        </div>
+
+        <div class="site-footer__nav">
+          <h2 class="site-footer__heading">Resources</h2>
+          <ul class="site-footer__list">
+            <li><a href="#" class="site-footer__link">Player Guide</a></li>
+            <li><a href="#" class="site-footer__link">Sponsorship</a></li>
+            <li><a href="#" class="site-footer__link">Media Kit</a></li>
+            <li><a href="#faq" class="site-footer__link">FAQ</a></li>
+            <li><a href="#contact" class="site-footer__link">Contact</a></li>
+          </ul>
+        </div>
+
+        <div class="site-footer__nav">
+          <h2 class="site-footer__heading">Venue</h2>
+          <address class="site-footer__contact">
+            Metro Bowl Arena<br>
+            452 Commerce Blvd<br>
+            Industrial District, NY<br>
+            <a href="mailto:info@metrolanes.com" class="site-footer__link">info@metrolanes.com</a>
+          </address>
+        </div>
+      </div>
+
+      <div class="site-footer__bottom">
+        <div class="site-footer__copyright">
+          &copy; 2026 Metro Lanes Open Championship. All rights reserved.
+        </div>
+        <div class="site-footer__legal">
+          <a href="#" class="site-footer__link">Privacy Policy</a>
+          <a href="#" class="site-footer__link">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,92 @@
+{% extends "core/base.html" %}
+
+{% block title %}Season Analytics | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+
+  <!-- Dashboard Header -->
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div class="dash-header__greeting">
+        <p class="dash-header__eyebrow">Season Detail</p>
+        <h1 class="dash-header__title">{{ season.name }}</h1>
+        <p class="dash-header__email">
+          {% if season.is_active %}<span class="badge badge--active">Active</span>{% else %}<span class="badge badge--inactive">Inactive</span>{% endif %}
+          · {{ season.start_date|date:"M d, Y" }} to {{ season.end_date|date:"M d, Y" }}
+        </p>
+      </div>
+      <div class="dash-header__actions">
+        <a class="btn btn--ghost" href="{% url 'admin_dashboard' %}">← Admin Dash</a>
+        <a class="btn btn--primary" href="{% url 'season_edit' season.pk %}">Edit Season</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-content">
+    
+    <!-- Stats Row -->
+    <div class="dash-stats">
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Participants</p>
+        <p class="dash-stat__value">{{ participants_count }}</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Teams</p>
+        <p class="dash-stat__value">{{ teams_count }}</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Est. Revenue</p>
+        <p class="dash-stat__value" style="color: #34a853;">${{ revenue|floatformat:2 }}</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Total Fixtures</p>
+        <p class="dash-stat__value">{{ total_fixtures }}</p>
+      </div>
+    </div>
+
+    <!-- Analytics & Details Grid -->
+    <div class="dash-grid">
+
+      <!-- Rounds Info -->
+      <div class="dash-card card" style="grid-column: 1 / -1;">
+        <div class="dash-card__header">
+          <h2 class="dash-card__title">Season Rounds & Fixtures</h2>
+          <a href="{% url 'admin:core_round_changelist' %}" class="btn btn--ghost" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Manage Rounds</a>
+        </div>
+        <div class="dash-card__body" style="padding: 0;">
+          <div class="manage-table-wrap" style="border: none; border-radius: 0;">
+            <table class="manage-table">
+              <thead>
+                <tr>
+                  <th>Round Name</th>
+                  <th>Game Type</th>
+                  <th>Dates</th>
+                  <th>Singles Fixtures</th>
+                  <th>Team Fixtures</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in rounds %}
+                <tr>
+                  <td class="manage-table__primary">{{ r.name }}</td>
+                  <td>{{ r.game_type.name }}</td>
+                  <td>{{ r.start_date|date:"M d" }} - {{ r.end_date|date:"M d" }}</td>
+                  <td>{{ r.singles_challenges.count }}</td>
+                  <td>{{ r.team_challenges.count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--text-muted);">No rounds created for this season yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}
