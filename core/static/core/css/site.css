@@ -500,6 +500,30 @@ body {
   color: var(--text-muted);
 }
 
+.schedule__item--completed .schedule__marker {
+  background: var(--accent);
+  border-color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule__item--completed .schedule__marker::after {
+  content: "✓";
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--bg-deep);
+}
+
+.schedule__item--completed .schedule__card {
+  opacity: 0.75;
+}
+
+.schedule__item--completed .schedule__name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
 @media (max-width: 30rem) {
   .schedule__item {
     grid-template-columns: 1fr;

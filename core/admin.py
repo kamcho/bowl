@@ -3,7 +3,8 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     User, Season, GameType, Participation, GameRules,
     Team, Round, SinglesChallenge, TeamChallenge,
-    SinglesFrame, TeamFrame, SinglesRoll, TeamRoll
+    SinglesFrame, TeamFrame, SinglesRoll, TeamRoll,
+    SeasonSchedule
 )
 
 
@@ -41,6 +42,12 @@ class GameTypeAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
 
+@admin.register(SeasonSchedule)
+class SeasonScheduleAdmin(admin.ModelAdmin):
+    list_display = ('season', 'event', 'date_range', 'order')
+    list_filter = ('season',)
+    search_fields = ('event', 'date_range')
+
 
 @admin.register(Participation)
 class ParticipationAdmin(admin.ModelAdmin):
@@ -65,9 +72,16 @@ class TeamAdmin(admin.ModelAdmin):
 
 @admin.register(Round)
 class RoundAdmin(admin.ModelAdmin):
-    list_display = ('name', 'season', 'game_type', 'start_date', 'end_date')
+    list_display = ('name', 'season', 'game_type', 'start_date', 'end_date', 'create_fixtures_link')
     list_filter = ('season', 'game_type')
     search_fields = ('name', 'season__name')
+
+    def create_fixtures_link(self, obj):
+        from django.utils.html import format_html
+        from django.urls import reverse
+        url = reverse('participation_edit', args=[obj.game_type.pk])
+        return format_html('<a class="button" href="{}">Create Fixtures</a>', url)
+    create_fixtures_link.short_description = "Actions"
 
 
 @admin.register(SinglesChallenge)

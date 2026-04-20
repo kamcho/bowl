@@ -2,9 +2,9 @@
 {% load static %}
 {% block content %}
 <section class="hero" aria-labelledby="hero-heading">
-  <div class="hero__bg" aria-hidden="true"></div>
+  <div class="hero__bg" aria-hidden="true" {% if active_season.hero_image %}style="background-image: linear-gradient(180deg, rgba(12, 15, 20, 0.4) 0%, var(--bg-deep) 95%), url('{{ active_season.hero_image }}'); background-size: cover; background-position: center; opacity: 1;"{% endif %}></div>
   <div class="hero__inner">
-    <p class="hero__eyebrow">Spring league · April 2026</p>
+    <p class="hero__eyebrow">{% if active_season %}{{ active_season.name }}{% else %}Metro Open{% endif %}</p>
     <h1 id="hero-heading" class="hero__title">Roll for the <span class="hero__title-accent">crown</span></h1>
     <p class="hero__lede">
       Team brackets, certified lanes, and live standings — Metro’s biggest amateur open is back.
@@ -34,45 +34,29 @@
   <div class="section__inner">
     <header class="section__header">
       <p class="section__eyebrow">Key dates</p>
-      <h2 id="schedule-heading" class="section__title">Season schedule</h2>
+      <h2 id="schedule-heading" class="section__title">{% if active_season %}{{ active_season.name }}{% else %}Season{% endif %} schedule</h2>
       <p class="section__intro">
         Qualifying runs four weeks; top sixteen teams advance to bracket play. All blocks are USBC-sanctioned oil patterns.
       </p>
     </header>
 
     <ol class="schedule">
+      {% for schedule in schedules %}
+      <li class="schedule__item {% if schedule.is_completed %}schedule__item--completed{% endif %} {% if forloop.last %}schedule__item--highlight{% endif %}">
+        <div class="schedule__marker" aria-hidden="true"></div>
+        <article class="schedule__card">
+          <time class="schedule__date" datetime="">{{ schedule.date_range }}</time>
+          <h3 class="schedule__name">{{ schedule.event }}</h3>
+          <p class="schedule__meta">{{ schedule.details }}</p>
+        </article>
+      </li>
+      {% empty %}
       <li class="schedule__item">
-        <div class="schedule__marker" aria-hidden="true"></div>
         <article class="schedule__card">
-          <time class="schedule__date" datetime="2026-04-19">Apr 19 — 20</time>
-          <h3 class="schedule__name">Week 1 · Qualifiers</h3>
-          <p class="schedule__meta">Sat 2:00 PM · Sun 10:00 AM · Lanes 1–16</p>
+          <p class="schedule__meta">Schedule to be announced soon.</p>
         </article>
       </li>
-      <li class="schedule__item">
-        <div class="schedule__marker" aria-hidden="true"></div>
-        <article class="schedule__card">
-          <time class="schedule__date" datetime="2026-04-26">Apr 26 — 27</time>
-          <h3 class="schedule__name">Week 2 · Qualifiers</h3>
-          <p class="schedule__meta">Sat 2:00 PM · Sun 10:00 AM · Lanes 1–16</p>
-        </article>
-      </li>
-      <li class="schedule__item">
-        <div class="schedule__marker" aria-hidden="true"></div>
-        <article class="schedule__card">
-          <time class="schedule__date" datetime="2026-05-03">May 3</time>
-          <h3 class="schedule__name">Playoffs · Sweet 16</h3>
-          <p class="schedule__meta">Single elimination · 6:00 PM · Center draw</p>
-        </article>
-      </li>
-      <li class="schedule__item schedule__item--highlight">
-        <div class="schedule__marker" aria-hidden="true"></div>
-        <article class="schedule__card">
-          <time class="schedule__date" datetime="2026-05-04">May 4</time>
-          <h3 class="schedule__name">Finals · Championship</h3>
-          <p class="schedule__meta">Doors 5:00 PM · ESPN+ stream · Trophy &amp; purse presentation</p>
-        </article>
-      </li>
+      {% endfor %}
     </ol>
   </div>
 </section>

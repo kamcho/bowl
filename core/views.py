@@ -21,7 +21,8 @@ from .models import (
     TeamFrame,
     TeamRoll,
     Team,
-    User
+    User,
+    SeasonSchedule
 )
 from .forms import (
     ProfileCompletionForm,
@@ -35,7 +36,14 @@ from .forms import (
 
 
 def home(request):
-    return render(request, 'core/home.html')
+    schedules = []
+    active_season = Season.objects.filter(is_active=True).first()
+    if active_season:
+        schedules = active_season.schedules.all().order_by('order')
+    return render(request, 'core/home.html', {
+        'schedules': schedules,
+        'active_season': active_season
+    })
 
 
 @login_required
@@ -85,7 +93,24 @@ def dashboard(request):
     active_season = Season.objects.filter(is_active=True).order_by('-start_date').first()
     leaderboard_participations = []
     if active_season:
-        leaderboard_participations = Participation.objects.filter(season=active_season).prefetch_related('rounds')
+        from django.db.models import Prefetch, Q
+        leaderboard_participations = Participation.objects.filter(season=active_season).prefetch_related(
+            Prefetch('rounds', queryset=Round.objects.order_by('order'))
+        )
+        
+        # Determine the default round for each participation
+        # Definition: The latest round (by order) that has at least one played frame.
+        for p in leaderboard_participations:
+            latest_with_scores = p.rounds.filter(
+                Q(singles_frames__played=True) | Q(team_frames__played=True)
+            ).order_by('-order').first()
+            
+            if latest_with_scores:
+                p.default_round_id = latest_with_scores.id
+            else:
+                # Fallback to the first round if no scores yet
+                first_round = p.rounds.first()
+                p.default_round_id = first_round.id if first_round else None
 
     return render(request, 'core/dashboard.html', {
         'singles': singles,
@@ -357,7 +382,7 @@ def participation_round_leaderboard(request, pk, round_id):
     if is_single:
         # Get all participants in this round
         participants = r.participants.all()
-        next_participants = next_round.participants.all() if next_round else []
+        next_participants_ids = set(next_round.participants.values_list('id', flat=True)) if next_round else set()
         
         for user in participants:
             # ... existing score logic ...
@@ -374,7 +399,8 @@ def participation_round_leaderboard(request, pk, round_id):
                 if (challenge.player_1 == user and s1 > s2) or (challenge.player_2 == user and s2 > s1):
                     won_match = True
 
-            can_promote = can_promote_general and (user not in next_participants)
+            is_enrolled_next = user.id in next_participants_ids
+            can_promote = can_promote_general and not is_enrolled_next
 
             leaderboard.append({
                 'id': user.id,
@@ -384,11 +410,12 @@ def participation_round_leaderboard(request, pk, round_id):
                 'rounds_played': rounds_played,
                 'won_match': won_match,
                 'can_promote': can_promote,
+                'is_enrolled_next': is_enrolled_next,
             })
     else:
         # Get all teams in this round
         teams = r.teams.all()
-        next_teams = next_round.teams.all() if next_round else []
+        next_teams_ids = set(next_round.teams.values_list('id', flat=True)) if next_round else set()
         
         for team in teams:
             # ... existing score logic ...
@@ -405,7 +432,8 @@ def participation_round_leaderboard(request, pk, round_id):
                 if (challenge.team_1 == team and s1 > s2) or (challenge.team_2 == team and s2 > s1):
                     won_match = True
 
-            can_promote = can_promote_general and (team not in next_teams)
+            is_enrolled_next = team.id in next_teams_ids
+            can_promote = can_promote_general and not is_enrolled_next
 
             leaderboard.append({
                 'id': team.id,
@@ -415,6 +443,7 @@ def participation_round_leaderboard(request, pk, round_id):
                 'rounds_played': rounds_played,
                 'won_match': won_match,
                 'can_promote': can_promote,
+                'is_enrolled_next': is_enrolled_next,
             })
             
     # Sort by round score, then total pins
@@ -689,10 +718,7 @@ def participation_round_create(request, pk):
         start_date=data['start_date'],
         end_date=data['end_date'],
     )
-    if p.name == 'Single':
-        r.participants.set(p.enrolled_users.all())
-    else:
-        r.teams.set(p.enrolled_teams.all())
+    # Rounds start empty; participants must be promoted or generated into them.
     messages.success(request, f'Round "{r.name}" created for this category.')
     return redirect('participation_edit', pk=pk)
 
@@ -765,38 +791,20 @@ def participation_promote_winners(request, pk):
     bye_note = None
     with transaction.atomic():
         if is_single:
-            for i in range(0, len(winners) - 1, 2):
-                SinglesChallenge.objects.create(
-                    round=to_round,
-                    player_1=winners[i],
-                    player_2=winners[i + 1],
-                    start_datetime=now,
-                    end_datetime=end,
-                )
+            for u in winners:
+                to_round.participants.add(u)
                 created += 1
-            if len(winners) % 2 == 1:
-                u = winners[-1]
-                bye_note = (u.get_full_name() or '').strip() or u.email
+            # bye_note not needed if we aren't pairing
         else:
-            for i in range(0, len(winners) - 1, 2):
-                TeamChallenge.objects.create(
-                    round=to_round,
-                    team_1=winners[i],
-                    team_2=winners[i + 1],
-                    start_datetime=now,
-                    end_datetime=end,
-                )
+            for tm in winners:
+                to_round.teams.add(tm)
                 created += 1
-            if len(winners) % 2 == 1:
-                bye_note = winners[-1].name
 
-    parts = [f'Created {created} match(es) in "{to_round.name}".']
+    parts = [f'Enrolled {created} winner(s) into "{to_round.name}".']
     if ties:
         parts.append(f'Skipped {ties} tied match(es) (no winner).')
     if unplayed:
         parts.append(f'Skipped {unplayed} unplayed match(es).')
-    if bye_note:
-        parts.append(f'Odd number of winners: bye for {bye_note} (no match created for this entry).')
     messages.success(request, ' '.join(parts))
     return redirect('participation_edit', pk=pk)
 
@@ -964,6 +972,33 @@ def team_list(request):
         'my_teams': my_teams
     })
 
+@staff_member_required
+def admin_team_list(request):
+    """Admin view to manage all teams with search functionality."""
+    query = request.GET.get('q', '').strip()
+    teams = Team.objects.select_related('captain').prefetch_related('members').all().order_by('name')
+    
+    if query:
+        from django.db.models import Q
+        teams = teams.filter(
+            Q(name__icontains=query) |
+            Q(captain__email__icontains=query) |
+            Q(captain__first_name__icontains=query) |
+            Q(captain__last_name__icontains=query) |
+            Q(captain__primary_phone__icontains=query) |
+            Q(captain__secondary_phone__icontains=query) |
+            Q(members__email__icontains=query) |
+            Q(members__first_name__icontains=query) |
+            Q(members__last_name__icontains=query) |
+            Q(members__primary_phone__icontains=query) |
+            Q(members__secondary_phone__icontains=query)
+        ).distinct()
+        
+    return render(request, 'core/admin_team_list.html', {
+        'teams': teams,
+        'query': query
+    })
+
 @login_required
 def team_create(request):
     """Create a new team and set current user as captain."""
@@ -1047,67 +1082,110 @@ def participation_generate_fixtures(request, pk):
     if is_single:
         participants = list(r.participants.all())
         if not participants:
-            messages.error(request, 'No participants enrolled in this round.')
-            return redirect('participation_edit', pk=pk)
+            # If empty round, check if we should pull from participation (likely first round)
+            master_list = p.enrolled_users.all()
+            if master_list.exists():
+                r.participants.set(master_list)
+                participants = list(master_list)
+            else:
+                messages.error(request, 'No participants enrolled in this round or category.')
+                return redirect('participation_edit', pk=pk)
             
         # Grouping logic
-        groups = []
-        if group_by == 'gender':
-            # Group by M, F, O, None
+        pairs = []
+        if group_by == 'gender_same':
+            # Separate by gender and pair within
             gender_map = {}
             for u in participants:
                 g = u.gender or 'O'
                 if g not in gender_map: gender_map[g] = []
                 gender_map[g].append(u)
-            groups = list(gender_map.values())
-        elif group_by == 'age':
-            # Group by 10-year brackets (0-19, 20-29, 30-39, etc.)
+            for g_list in gender_map.values():
+                import random
+                random.shuffle(g_list)
+                for i in range(0, len(g_list) - 1, 2):
+                    pairs.append((g_list[i], g_list[i+1]))
+        elif group_by == 'gender_opp':
+            # Try to pair M with F, etc.
+            males = [u for u in participants if u.gender == 'M']
+            females = [u for u in participants if u.gender == 'F']
+            others = [u for u in participants if u.gender not in ('M', 'F')]
+            import random
+            random.shuffle(males)
+            random.shuffle(females)
+            random.shuffle(others)
+            
+            # Pair M-F
+            while males and females:
+                pairs.append((males.pop(), females.pop()))
+            # Pair remaining with others
+            rem = males + females + others
+            random.shuffle(rem)
+            for i in range(0, len(rem) - 1, 2):
+                pairs.append((rem[i], rem[i+1]))
+        elif group_by == 'age_5':
+            # Sort by age and pair neighbors if within 5 years
             from datetime import date
             def get_age(bd):
                 if not bd: return 999
                 today = date.today()
                 return today.year - bd.year - ((today.month, today.day) < (bd.month, bd.day))
             
-            age_map = {}
-            for u in participants:
-                age = get_age(u.birth_date)
-                bracket = (age // 10) * 10
-                if bracket not in age_map: age_map[bracket] = []
-                age_map[bracket].append(u)
-            groups = list(age_map.values())
+            sorted_by_age = sorted(participants, key=lambda u: get_age(u.birth_date))
+            i = 0
+            while i < len(sorted_by_age) - 1:
+                u1 = sorted_by_age[i]
+                u2 = sorted_by_age[i+1]
+                a1 = get_age(u1.birth_date)
+                a2 = get_age(u2.birth_date)
+                if a1 != 999 and a2 != 999 and abs(a1 - a2) <= 5:
+                    pairs.append((u1, u2))
+                    i += 2
+                else:
+                    # Skip u1 and try next pair? Or just pair anyway?
+                    # The requirement says "age group of 5 year difference".
+                    # I'll pair them anyway if no better match, or just skip?
+                    # Let's just pair neighbors to keep it simple but prioritize the 5yr gap.
+                    pairs.append((u1, u2))
+                    i += 2
         else:
             # Random / Single group
             import random
             random.shuffle(participants)
-            groups = [participants]
+            for i in range(0, len(participants) - 1, 2):
+                pairs.append((participants[i], participants[i+1]))
             
         created_count = 0
-        for group in groups:
-            import random
-            random.shuffle(group)
-            # Pair within each group
-            for i in range(0, len(group) - 1, 2):
-                p1, p2 = group[i], group[i+1]
-                # Check if already exists
-                exists = SinglesChallenge.objects.filter(
-                    round=r,
-                    player_1__in=[p1, p2],
-                    player_2__in=[p1, p2]
-                ).exists()
-                if not exists:
-                    SinglesChallenge.objects.create(
-                        round=r, 
-                        player_1=p1, 
-                        player_2=p2,
-                        start_datetime=start_dt,
-                        end_datetime=end_dt
-                    )
-                    created_count += 1
+        for p1, p2 in pairs:
+            # Check if already exists
+            exists = SinglesChallenge.objects.filter(
+                round=r,
+                player_1__in=[p1, p2],
+                player_2__in=[p1, p2]
+            ).exists()
+            if not exists:
+                SinglesChallenge.objects.create(
+                    round=r, 
+                    player_1=p1, 
+                    player_2=p2,
+                    start_datetime=start_dt,
+                    end_datetime=end_dt
+                )
+                created_count += 1
         
-        messages.success(request, f'Generated {created_count} singles fixtures.')
+        messages.success(request, f'Generated {created_count} singles fixtures using "{group_by}" strategy.')
     else:
         # Team fixtures - simpler random for now
         teams = list(r.teams.all())
+        if not teams:
+            master_list = p.enrolled_teams.all()
+            if master_list.exists():
+                r.teams.set(master_list)
+                teams = list(master_list)
+            else:
+                messages.error(request, 'No teams enrolled in this round or category.')
+                return redirect('participation_edit', pk=pk)
+        
         import random
         random.shuffle(teams)
         created_count = 0

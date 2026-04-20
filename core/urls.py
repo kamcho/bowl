@@ -70,6 +70,7 @@ urlpatterns = [
 
     # Teams
     path('teams/', views.team_list, name='team_list'),
+    path('manage/teams/', views.admin_team_list, name='admin_team_list'),
     path('teams/create/', views.team_create, name='team_create'),
     path('teams/<int:pk>/', views.team_detail, name='team_detail'),
     path('teams/<int:pk>/add-member/', views.team_add_member, name='team_add_member'),

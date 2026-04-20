@@ -1,0 +1,91 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Manage Teams | Metro Lanes{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div class="dash-header__greeting">
+        <p class="dash-header__eyebrow">Admin Portal</p>
+        <h1 class="dash-header__title">Team Directory</h1>
+        <p class="dash-header__email">Managing all registered teams</p>
+      </div>
+      <div class="dash-header__actions">
+        <a class="btn btn--ghost" href="{% url 'admin_dashboard' %}">← Back to Admin Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-content">
+    <!-- Search Bar -->
+    <div style="margin-bottom: 2rem; background: rgba(18,23,34,0.6); padding: 1.5rem; border-radius: 0.85rem; border: 1px solid rgba(255,255,255,0.08);">
+      <form method="get" style="display: flex; gap: 1rem; align-items: center; width: 100%;">
+        <div style="position: relative; flex-grow: 1;">
+          <input type="text" name="q" value="{{ query }}" placeholder="Search by team, captain, members, email, or phone..." class="form-control" style="margin: 0; padding-left: 2.5rem; width: 100%;">
+          <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); opacity: 0.5;">🔍</span>
+        </div>
+        <button type="submit" class="btn btn--primary">Search</button>
+        {% if query %}
+          <a href="{% url 'admin_team_list' %}" class="btn btn--ghost">Clear</a>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Team Cards Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+      {% for team in teams %}
+        <div class="card" style="display: flex; flex-direction: column; overflow: hidden; height: 100%;">
+          <div style="padding: 1.5rem; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <h2 style="margin: 0; font-size: 1.25rem; font-family: var(--font-display); letter-spacing: 0.04em;">{{ team.name }}</h2>
+              <span class="badge {% if team.is_recruiting %}badge--active{% else %}badge--inactive{% endif %}" style="font-size: 0.7rem;">
+                {% if team.is_recruiting %}Recruiting{% else %}Locked{% endif %}
+              </span>
+            </div>
+            <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">{{ team.category }}</p>
+          </div>
+          
+          <div style="padding: 1.5rem; flex-grow: 1;">
+            <div style="margin-bottom: 1.25rem;">
+              <p style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.5rem;">Captain</p>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                  {{ team.captain.email|slice:":1"|upper }}
+                </div>
+                <div style="min-width: 0;">
+                  <p style="margin: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ team.captain.get_full_name|default:team.captain.email }}</p>
+                  <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ team.captain.email }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.5rem;">Members ({{ team.members.count }})</p>
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for member in team.members.all %}
+                  <li style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: var(--accent); font-size: 0.7rem;">●</span>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ member.get_full_name|default:member.email }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+
+          <div style="padding: 1rem 1.5rem; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+            <a href="{% url 'team_detail' team.pk %}" class="manage-action" style="padding: 0;">Public View</a>
+            <a href="{% url 'admin:core_team_change' team.pk %}" class="btn btn--ghost" style="font-size: 0.75rem; padding: 0.4rem 0.75rem;">Edit in Admin</a>
+          </div>
+        </div>
+      {% empty %}
+        <div style="grid-column: 1 / -1; padding: 4rem; text-align: center; background: rgba(18,23,34,0.4); border-radius: 0.85rem; border: 1px dashed rgba(255,255,255,0.1);">
+          <p style="font-size: 1.25rem; color: var(--text-muted);">No teams found matching your search.</p>
+          <a href="{% url 'admin_team_list' %}" class="btn btn--ghost" style="margin-top: 1rem;">View All Teams</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

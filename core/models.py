@@ -79,8 +79,21 @@ class Season(models.Model):
     register_end_date = models.DateField()
     participants = models.ManyToManyField(User, related_name='participants')
     teams = models.ManyToManyField(Team, related_name='teamups')
+    hero_image = models.URLField(blank=True, null=True, help_text="URL for the hero background image")
+    
     def __str__(self):
         return self.name
+
+class SeasonSchedule(models.Model):
+    season = models.ForeignKey(Season, on_delete=models.CASCADE, related_name='schedules')
+    event = models.CharField(max_length=100)
+    date_range = models.CharField(max_length=100)
+    details = models.TextField()
+    order = models.IntegerField(default=0)
+    is_completed = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.season.name} - {self.event}"
 
 
 class GameType(models.Model):

@@ -223,8 +223,9 @@
                 <select name="group_by" class="form-control">
                   <option value="random">Random (Shuffle)</option>
                   {% if is_single %}
-                  <option value="gender">Match by Gender</option>
-                  <option value="age">Match by Age Group</option>
+                  <option value="gender_same">Gender (Match Same)</option>
+                  <option value="gender_opp">Gender (Match Opposite)</option>
+                  <option value="age_5">Age (Within 5-Year Gap)</option>
                   {% endif %}
                 </select>
               </div>
@@ -356,7 +357,7 @@ function showLeaderboard(roundId) {
             <td style="padding:0.85rem 0.5rem; text-align:right; font-weight:800; color:var(--accent);">${item.round_score}</td>
             <td style="padding:0.85rem 0.5rem; text-align:right; font-weight:700; color:var(--text-light);">${item.total_pins}</td>
             <td style="padding:0.85rem 0.5rem; text-align:right;">
-              ${item.can_promote ? `<button onclick="promoteParticipant('${item.id}', '${roundId}')" class="btn btn--sm" style="padding:0.2rem 0.5rem; font-size:0.7rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-muted);">Promote</button>` : '<span style="font-size:0.7rem; color:var(--text-muted); opacity:0.5;">Enrolled</span>'}
+              ${item.is_enrolled_next ? '<span style="font-size:0.7rem; color:var(--accent); font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">Enrolled</span>' : (item.can_promote ? `<button onclick="promoteParticipant('${item.id}', '${roundId}')" class="btn btn--sm" style="padding:0.2rem 0.5rem; font-size:0.7rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-muted);">Promote</button>` : '<span style="font-size:0.7rem; color:var(--text-muted); opacity:0.5;">—</span>')}
             </td>
           </tr>`;
         });

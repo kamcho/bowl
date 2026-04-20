@@ -9,7 +9,7 @@ django.setup()
 
 from core.models import (
     User, Team, Season, GameType, Participation, Round,
-    SinglesChallenge, TeamChallenge, SinglesFrame, TeamFrame, SinglesRoll, TeamRoll
+    SinglesChallenge, TeamChallenge, SinglesFrame, TeamFrame, SinglesRoll, TeamRoll, SeasonSchedule
 )
 
 def create_fake_data():
@@ -23,6 +23,7 @@ def create_fake_data():
     Round.objects.all().delete()
     Participation.objects.all().delete()
     GameType.objects.all().delete()
+    SeasonSchedule.objects.all().delete()
     Season.objects.all().delete()
     Team.objects.all().delete()
     User.objects.filter(is_superuser=False).delete()
@@ -67,10 +68,17 @@ def create_fake_data():
         end_date=now.date() + timedelta(days=60),
         is_active=True,
         register_start_date=now.date() - timedelta(days=60),
-        register_end_date=now.date() - timedelta(days=31)
+        register_end_date=now.date() - timedelta(days=31),
+        hero_image="/static/core/img/hero.png"
     )
     season.participants.set(users)
     season.teams.set(teams)
+
+    print("Creating Season Schedules...")
+    SeasonSchedule.objects.create(season=season, event="Week 1 · Qualifiers", date_range="Apr 19 — 20", details="Sat 2:00 PM · Sun 10:00 AM · Lanes 1–16", order=1, is_completed=True)
+    SeasonSchedule.objects.create(season=season, event="Week 2 · Qualifiers", date_range="Apr 26 — 27", details="Sat 2:00 PM · Sun 10:00 AM · Lanes 1–16", order=2, is_completed=True)
+    SeasonSchedule.objects.create(season=season, event="Playoffs · Sweet 16", date_range="May 3", details="Single elimination · 6:00 PM · Center draw", order=3, is_completed=False)
+    SeasonSchedule.objects.create(season=season, event="Finals · Championship", date_range="May 4", details="Doors 5:00 PM · ESPN+ stream · Trophy & purse presentation as in the landing page so we can display it in the landing page from db", order=4, is_completed=False)
 
     gt = GameType.objects.create(name="10-Pin Standard", description="Classic 10-Pin Bowling")
 

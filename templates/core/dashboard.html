@@ -224,7 +224,7 @@
                 {% if p.rounds.all %}
                   <div style="display: flex; gap: 0.4rem; padding: 1rem 1.5rem; background: rgba(255,255,255,0.02); overflow-x: auto;">
                     {% for r in p.rounds.all %}
-                    <button type="button" class="round-tab-btn r-tab-{{ p.id }} {% if forloop.first %}active{% endif %}" onclick="openRoundLeaderboard(event, '{{ p.id }}', '{{ r.id }}')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 2rem; color: var(--text-muted); padding: 0.35rem 1rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+                    <button type="button" class="round-tab-btn r-tab-{{ p.id }} {% if r.id == p.default_round_id %}active{% endif %}" data-default="{% if r.id == p.default_round_id %}true{% else %}false{% endif %}" data-completed="{{ r.is_completed|yesno:'true,false' }}" onclick="openRoundLeaderboard(event, '{{ p.id }}', '{{ r.id }}')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 2rem; color: var(--text-muted); padding: 0.35rem 1rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
                       {{ r.name }}
                     </button>
                     {% endfor %}
@@ -268,9 +268,13 @@ function openCategoryTab(evt, catId) {
   evt.currentTarget.style.borderBottomColor = "var(--accent)";
   evt.currentTarget.style.color = "var(--text-light)";
   
-  // Trigger first round tab if not already loaded
-  var firstRoundBtn = document.querySelector(`#${catId} .round-tab-btn`);
-  if (firstRoundBtn) firstRoundBtn.click();
+  // Trigger the default round (latest with scores)
+  var roundBtns = document.querySelectorAll(`#${catId} .round-tab-btn`);
+  if (roundBtns.length > 0) {
+    var targetBtn = Array.from(roundBtns).find(btn => btn.getAttribute('data-default') === 'true');
+    if (!targetBtn) targetBtn = roundBtns[roundBtns.length - 1];
+    if (targetBtn) targetBtn.click();
+  }
 }
 
 function openRoundLeaderboard(evt, catId, roundId) {
