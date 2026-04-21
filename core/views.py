@@ -6,7 +6,10 @@ from django.db.models import Count
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from datetime import timedelta, datetime
+import json
+import requests
 
 from .models import (
     Season,
@@ -22,8 +25,10 @@ from .models import (
     TeamRoll,
     Team,
     User,
-    SeasonSchedule
+    SeasonSchedule,
+    Payment
 )
+from .mpesa import MpesaService
 from .forms import (
     ProfileCompletionForm,
     SeasonForm,
@@ -37,12 +42,15 @@ from .forms import (
 
 def home(request):
     schedules = []
+    participations = []
     active_season = Season.objects.filter(is_active=True).first()
     if active_season:
         schedules = active_season.schedules.all().order_by('order')
+        participations = active_season.participations.all().select_related('game_type')
     return render(request, 'core/home.html', {
         'schedules': schedules,
-        'active_season': active_season
+        'active_season': active_season,
+        'participations': participations
     })
 
 
@@ -99,7 +107,6 @@ def dashboard(request):
         )
         
         # Determine the default round for each participation
-        # Definition: The latest round (by order) that has at least one played frame.
         for p in leaderboard_participations:
             latest_with_scores = p.rounds.filter(
                 Q(singles_frames__played=True) | Q(team_frames__played=True)
@@ -108,15 +115,29 @@ def dashboard(request):
             if latest_with_scores:
                 p.default_round_id = latest_with_scores.id
             else:
-                # Fallback to the first round if no scores yet
                 first_round = p.rounds.first()
                 p.default_round_id = first_round.id if first_round else None
+
+    # Enrollment Data: Tabbed Seasons and available participations
+    all_seasons = Season.objects.all().order_by('-start_date')
+    first_active_season_id = None
+    for s in all_seasons:
+        if s.is_active and first_active_season_id is None:
+            first_active_season_id = s.id
+        s.available_participations = s.participations.all().select_related('game_type')
+        for p in s.available_participations:
+            p.is_enrolled = p.enrolled_users.filter(id=user.id).exists()
+    
+    if first_active_season_id is None and all_seasons.exists():
+        first_active_season_id = all_seasons[0].id
 
     return render(request, 'core/dashboard.html', {
         'singles': singles,
         'team_matches': team_matches,
         'active_season': active_season,
         'leaderboard_participations': leaderboard_participations,
+        'all_seasons': all_seasons,
+        'first_active_season_id': first_active_season_id,
     })
 
 from django.contrib.admin.views.decorators import staff_member_required
@@ -137,16 +158,55 @@ def admin_dashboard(request):
         selected_season = seasons.filter(is_active=True).first() or seasons.first()
         
     game_types = GameType.objects.all()
-    participations = []
+    stats = {
+        'total_players': 0,
+        'total_teams': 0,
+        'total_rounds': 0,
+        'total_revenue': 0,
+    }
+    
+    recent_payments = []
+    top_participants = []
+    category_breakdown = []
     
     if selected_season:
         participations = Participation.objects.filter(season=selected_season).select_related('game_type')
         
+        # Stats calculations
+        from django.db.models import Count, Sum
+        stats['total_players'] = User.objects.filter(enrolled_participations__season=selected_season).distinct().count()
+        stats['total_teams'] = Team.objects.filter(enrolled_participations__season=selected_season).distinct().count()
+        stats['total_rounds'] = Round.objects.filter(season=selected_season).count()
+        stats['total_revenue'] = Payment.objects.filter(participation__season=selected_season, status='SUCCESS').aggregate(total=Sum('amount'))['total'] or 0
+
+        # Recent successful payments
+        recent_payments = Payment.objects.filter(participation__season=selected_season, status='SUCCESS').select_related('user', 'participation').order_by('-created_at')[:5]
+        
+        # Category breakdown for chart
+        for p in participations:
+            first_round = Round.objects.filter(season=selected_season).order_by('order').first()
+            category_breakdown.append({
+                'id': p.id,
+                'name': p.name,
+                'count': p.enrolled_users.count(),
+                'charge': p.charge,
+                'game_type_name': p.game_type.name,
+                'first_round_id': first_round.id if first_round else None
+            })
+            
+        # Top participants (by points if available, otherwise just enrolled ones)
+        # For now, let's just get some users
+        top_participants = User.objects.filter(enrolled_participations__season=selected_season).distinct()[:5]
+
     return render(request, 'core/admin_dashboard.html', {
         'seasons': seasons,
         'selected_season': selected_season,
         'game_types': game_types,
         'participations': participations,
+        'stats': stats,
+        'recent_payments': recent_payments,
+        'top_participants': top_participants,
+        'category_breakdown': category_breakdown,
     })
 
 
@@ -329,7 +389,7 @@ def participation_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Participation updated successfully!')
-            return redirect('participation_list')
+            return redirect('participation_edit', pk=p.pk)
     else:
         form = ParticipationForm(instance=p)
     enrolled_users_count = p.enrolled_users.count()
@@ -343,10 +403,12 @@ def participation_edit(request, pk):
 
     rounds = (
         p.rounds.all()
-        .order_by('start_date', 'id')
+        .order_by('order', 'id')
         .annotate(
             singles_match_count=Count('singles_challenges', distinct=True),
             team_match_count=Count('team_challenges', distinct=True),
+            participant_count=Count('participants', distinct=True),
+            team_count=Count('teams', distinct=True),
         )
     )
 
@@ -376,7 +438,8 @@ def participation_round_leaderboard(request, pk, round_id):
     
     # Find next round by order
     next_round = p.rounds.filter(order__gt=r.order).order_by('order').first()
-    can_promote_general = next_round and not next_round.is_completed
+    # Promotion is only allowed if the current round is completed AND the next round is not completed
+    can_promote_general = r.is_completed and next_round and not next_round.is_completed
     
     leaderboard = []
     if is_single:
@@ -736,6 +799,9 @@ def participation_promote_winners(request, pk):
                 messages.error(request, err)
         return redirect('participation_edit', pk=pk)
     from_round = form.cleaned_data['from_round']
+    criteria = form.cleaned_data['criteria']
+    percentage = form.cleaned_data['percentage'] or 50
+    
     if from_round.game_type_id != p.id:
         messages.error(request, 'Invalid round for this participation.')
         return redirect('participation_edit', pk=pk)
@@ -748,64 +814,99 @@ def participation_promote_winners(request, pk):
         )
         return redirect('participation_edit', pk=pk)
 
-    now = timezone.now()
-    end = now + timedelta(hours=2)
-    ties = unplayed = 0
-    winners = []
+    promoted_objs = []
+    skipped_info = ""
 
-    if is_single:
-        qs = from_round.singles_challenges.all()
-        if not qs.exists():
-            messages.error(request, 'That round has no matches yet.')
-            return redirect('participation_edit', pk=pk)
-        for c in qs:
-            w = c.get_winner_player()
-            if w:
-                winners.append(w)
-            elif c.get_p1_score == 0 and c.get_p2_score == 0:
-                unplayed += 1
+    if criteria == 'all_winners':
+        ties = unplayed = 0
+        if is_single:
+            qs = from_round.singles_challenges.all()
+            for c in qs:
+                w = c.get_winner_player()
+                if w: promoted_objs.append(w)
+                elif c.get_p1_score == 0 and c.get_p2_score == 0: unplayed += 1
+                else: ties += 1
+        else:
+            qs = from_round.team_challenges.all()
+            for c in qs:
+                w = c.get_winner_team()
+                if w: promoted_objs.append(w)
+                elif c.get_t1_score == 0 and c.get_t2_score == 0: unplayed += 1
+                else: ties += 1
+        skipped_info = f'All {len(promoted_objs)} winners promoted.'
+    
+    elif criteria == 'top_winners':
+        winners_list = []
+        if is_single:
+            qs = from_round.singles_challenges.all()
+            for c in qs:
+                w = c.get_winner_player()
+                if w: winners_list.append(w)
+        else:
+            qs = from_round.team_challenges.all()
+            for c in qs:
+                w = c.get_winner_team()
+                if w: winners_list.append(w)
+        
+        # Rank the winners by their total round score
+        ranked_winners = []
+        for obj in winners_list:
+            score = 0
+            if is_single:
+                challenges = SinglesChallenge.objects.filter(round=from_round).filter(Q(player_1=obj) | Q(player_2=obj))
+                for c in challenges:
+                    score += c.get_p1_score if c.player_1 == obj else c.get_p2_score
             else:
-                ties += 1
-    else:
-        qs = from_round.team_challenges.all()
-        if not qs.exists():
-            messages.error(request, 'That round has no matches yet.')
-            return redirect('participation_edit', pk=pk)
-        for c in qs:
-            w = c.get_winner_team()
-            if w:
-                winners.append(w)
-            elif c.get_t1_score == 0 and c.get_t2_score == 0:
-                unplayed += 1
-            else:
-                ties += 1
+                challenges = TeamChallenge.objects.filter(round=from_round).filter(Q(team_1=obj) | Q(team_2=obj))
+                for c in challenges:
+                    score += c.get_t1_score if c.team_1 == obj else c.get_t2_score
+            ranked_winners.append({'obj': obj, 'score': score})
+        
+        ranked_winners.sort(key=lambda x: x['score'], reverse=True)
+        limit = max(1, int(len(ranked_winners) * (percentage / 100.0)))
+        promoted_objs = [x['obj'] for x in ranked_winners[:limit]]
+        skipped_info = f'Top {percentage}% of winners ({len(promoted_objs)} out of {len(ranked_winners)}) selected.'
 
-    if len(winners) < 2:
-        messages.error(
-            request,
-            'Need at least two decisive winners to pair into the next round. Enter scores or break ties first.',
-        )
+    else: # top_percentage
+        ranked = []
+        if is_single:
+            participants = from_round.participants.all()
+            for player in participants:
+                challenges = SinglesChallenge.objects.filter(round=from_round).filter(Q(player_1=player) | Q(player_2=player))
+                score = 0
+                for c in challenges:
+                    score += c.get_p1_score if c.player_1 == player else c.get_p2_score
+                ranked.append({'obj': player, 'score': score})
+        else:
+            teams = from_round.teams.all()
+            for team in teams:
+                challenges = TeamChallenge.objects.filter(round=from_round).filter(Q(team_1=team) | Q(team_2=team))
+                score = 0
+                for c in challenges:
+                    score += c.get_t1_score if c.team_1 == team else c.get_t2_score
+                ranked.append({'obj': team, 'score': score})
+        
+        ranked.sort(key=lambda x: x['score'], reverse=True)
+        limit = max(1, int(len(ranked) * (percentage / 100.0)))
+        promoted_objs = [x['obj'] for x in ranked[:limit]]
+        skipped_info = f'Top {percentage}% of all participants ({len(promoted_objs)} out of {len(ranked)}) selected.'
+
+    if not promoted_objs:
+        messages.error(request, 'No participants found to promote based on selected criteria.')
         return redirect('participation_edit', pk=pk)
 
     created = 0
-    bye_note = None
     with transaction.atomic():
         if is_single:
-            for u in winners:
+            for u in promoted_objs:
                 to_round.participants.add(u)
                 created += 1
-            # bye_note not needed if we aren't pairing
         else:
-            for tm in winners:
+            for tm in promoted_objs:
                 to_round.teams.add(tm)
                 created += 1
 
-    parts = [f'Enrolled {created} winner(s) into "{to_round.name}".']
-    if ties:
-        parts.append(f'Skipped {ties} tied match(es) (no winner).')
-    if unplayed:
-        parts.append(f'Skipped {unplayed} unplayed match(es).')
-    messages.success(request, ' '.join(parts))
+    messages.success(request, f'Promoted {created} participant(s) to "{to_round.name}". {skipped_info}')
     return redirect('participation_edit', pk=pk)
 
 
@@ -1212,10 +1313,18 @@ def participation_generate_fixtures(request, pk):
 @login_required
 @require_POST
 def participation_manual_promote(request, pk, round_id):
-    """Manually promote a single participant/team to the next chronological round by order."""
+    """Manually promote multiple participants/teams to the next chronological round by order."""
     p = get_object_or_404(Participation, pk=pk)
     r = get_object_or_404(Round, pk=round_id, game_type=p)
-    target_id = request.POST.get('target_id')
+    
+    target_ids = request.POST.getlist('target_ids[]')
+    if not target_ids:
+        tid = request.POST.get('target_id')
+        if tid:
+            target_ids = [tid]
+            
+    if not target_ids:
+        return JsonResponse({'ok': False, 'error': 'No participants selected.'}, status=400)
     
     # Find next round by order
     next_round = p.rounds.filter(order__gt=r.order).order_by('order').first()
@@ -1226,16 +1335,21 @@ def participation_manual_promote(request, pk, round_id):
         return JsonResponse({'ok': False, 'error': 'The next round is already completed.'}, status=400)
     
     is_single = 'single' in p.name.lower()
-    if is_single:
-        user = get_object_or_404(User, pk=target_id)
-        next_round.participants.add(user)
-        name = user.get_full_name() or user.email
-    else:
-        team = get_object_or_404(Team, pk=target_id)
-        next_round.teams.add(team)
-        name = team.name
+    promoted_count = 0
+    
+    with transaction.atomic():
+        if is_single:
+            users = User.objects.filter(pk__in=target_ids)
+            for u in users:
+                next_round.participants.add(u)
+                promoted_count += 1
+        else:
+            teams = Team.objects.filter(pk__in=target_ids)
+            for t in teams:
+                next_round.teams.add(t)
+                promoted_count += 1
         
-    return JsonResponse({'ok': True, 'message': f'Promoted {name} to {next_round.name}'})
+    return JsonResponse({'ok': True, 'message': f'Promoted {promoted_count} participants to {next_round.name}'})
 
 @login_required
 @require_POST
@@ -1248,3 +1362,226 @@ def participation_round_complete(request, pk, round_id):
     r.save()
     
     return JsonResponse({'ok': True, 'message': f'Round "{r.name}" marked as completed.'})
+@login_required
+def initiate_enrollment_payment(request, pk):
+    participation = get_object_or_404(Participation, pk=pk)
+    
+    if request.user in participation.enrolled_users.all():
+        messages.info(request, "You are already enrolled in this category.")
+        return redirect('dashboard')
+        
+    if request.method == 'POST':
+        phone_number = request.POST.get('phone_number')
+        print(f"DEBUG: Enrollment POST received. Participation: {participation.id}, Phone: {phone_number}")
+        
+        if not phone_number:
+            messages.error(request, "Phone number is required.")
+            return redirect('initiate_enrollment_payment', pk=pk)
+            
+        # Clean phone number (remove +, spaces, etc)
+        phone_number = ''.join(filter(str.isdigit, phone_number))
+        
+        # Trigger STK Push
+        # participation ID as account reference as requested
+        print(f"DEBUG: Calling MpesaService.stk_push...")
+        resp, error = MpesaService.stk_push(phone_number, participation.charge, str(participation.id))
+        print(f"DEBUG: MpesaService.stk_push returned. Resp: {resp}, Error: {error}")
+        
+        if error or resp.get('ResponseCode') != '0':
+            msg = error or resp.get('CustomerMessage', 'Failed to initiate payment')
+            messages.error(request, f"Error: {msg}")
+            return redirect('initiate_enrollment_payment', pk=pk)
+            
+        # Create Pending Payment
+        Payment.objects.create(
+            user=request.user,
+            participation=participation,
+            amount=participation.charge,
+            phone_number=phone_number,
+            checkout_request_id=resp['CheckoutRequestID'],
+            merchant_request_id=resp['MerchantRequestID'],
+            status='PENDING'
+        )
+        
+        messages.success(request, "Payment initiated. Please check your phone for the M-Pesa PIN prompt.")
+        return redirect('dashboard')
+    
+    return render(request, 'core/enroll_payment.html', {'participation': participation})
+
+@csrf_exempt
+@require_POST
+def mpesa_callback(request):
+    try:
+        data = json.loads(request.body)
+        stk_callback = data.get('Body', {}).get('stkCallback', {})
+        
+        merchant_request_id = stk_callback.get('MerchantRequestID')
+        checkout_request_id = stk_callback.get('CheckoutRequestID')
+        result_code = stk_callback.get('ResultCode')
+        result_desc = stk_callback.get('ResultDesc')
+        
+        try:
+            payment = Payment.objects.get(checkout_request_id=checkout_request_id)
+            payment.result_desc = result_desc
+            
+            if result_code == 0:
+                # Success
+                payment.status = 'SUCCESS'
+                # Extract transaction ID from CallbackMetadata
+                items = stk_callback.get('CallbackMetadata', {}).get('Item', [])
+                for item in items:
+                    if item.get('Name') == 'MpesaReceiptNumber':
+                        payment.transaction_id = item.get('Value')
+                        break
+                
+                # Enroll the user in the participation
+                payment.participation.enrolled_users.add(payment.user)
+                payment.save()
+                return JsonResponse({'ResultCode': 0, 'ResultDesc': 'Accepted'})
+            else:
+                # Failed (user cancelled, insufficient funds, etc)
+                payment.status = 'FAILED'
+                payment.save()
+                return JsonResponse({'ResultCode': 0, 'ResultDesc': 'Accepted'})
+                
+        except Payment.DoesNotExist:
+            return JsonResponse({'ResultCode': 1, 'ResultDesc': 'Payment not found'}, status=404)
+            
+    except Exception as e:
+        return JsonResponse({'ResultCode': 1, 'ResultDesc': str(e)}, status=500)
+
+
+@staff_member_required
+def payment_list(request):
+    """
+    Admin view to list all payments, tabbed by season and filterable.
+    """
+    seasons = Season.objects.all().order_by('-start_date')
+    selected_season_id = request.GET.get('season')
+    
+    if not selected_season_id and seasons.exists():
+        selected_season_id = seasons.first().id
+        
+    selected_season = None
+    if selected_season_id:
+        selected_season = get_object_or_404(Season, id=selected_season_id)
+
+    # Base queryset
+    payments = Payment.objects.select_related('user', 'participation__game_type', 'participation__season')
+    
+    if selected_season:
+        payments = payments.filter(participation__season=selected_season)
+    
+    # Filters
+    status_filter = request.GET.get('status')
+    if status_filter:
+        payments = payments.filter(status=status_filter)
+        
+    participation_filter = request.GET.get('participation')
+    if participation_filter:
+        payments = payments.filter(participation_id=participation_filter)
+
+    round_filter = request.GET.get('round')
+    if round_filter:
+        # Filter payments where the user is a participant in the selected round
+        payments = payments.filter(participation__rounds__id=round_filter, user__rounds__id=round_filter)
+
+    payments = payments.order_by('-created_at')
+
+    # Aggregates for the selected season
+    from django.db.models import Sum
+    season_payments = Payment.objects.filter(participation__season=selected_season) if selected_season else Payment.objects.all()
+    
+    total_revenue = season_payments.filter(status='SUCCESS').aggregate(total=Sum('amount'))['total'] or 0
+    pending_count = season_payments.filter(status='PENDING').count()
+    success_count = season_payments.filter(status='SUCCESS').count()
+    failed_count = season_payments.filter(status='FAILED').count()
+
+    # Participations for the season (for filter dropdown)
+    available_participations = []
+    available_rounds = []
+    if selected_season:
+        available_participations = Participation.objects.filter(season=selected_season).select_related('game_type')
+        available_rounds = Round.objects.filter(season=selected_season).order_by('order')
+
+    return render(request, 'core/payment_list.html', {
+        'seasons': seasons,
+        'selected_season': selected_season,
+        'payments': payments,
+        'status_filter': status_filter,
+        'participation_filter': participation_filter,
+        'round_filter': round_filter,
+        'available_participations': available_participations,
+        'available_rounds': available_rounds,
+        'total_revenue': total_revenue,
+        'pending_count': pending_count,
+        'success_count': success_count,
+        'failed_count': failed_count,
+    })
+@require_POST
+def chat_assistant(request):
+    """
+    Endpoint for the AI chat widget.
+    """
+    import json
+    from .ai import get_ai_response
+    
+    data = json.loads(request.body)
+    user_message = data.get('message', '')
+    history = data.get('history', []) # List of {role: ..., content: ...}
+    
+    if not user_message:
+        return JsonResponse({'error': 'No message provided'}, status=400)
+    
+    # Prepare messages for OpenAI (limiting history to last 10 messages)
+    messages = history[-10:] + [{"role": "user", "content": user_message}]
+    
+    ai_response = get_ai_response(messages, user_obj=request.user if request.user.is_authenticated else None)
+    
+    # Log messages to database
+    from .models import ChatMessage
+    session_id = request.session.session_key or 'anonymous'
+    
+    # Save User message
+    ChatMessage.objects.create(
+        user=request.user if request.user.is_authenticated else None,
+        role='user',
+        content=user_message,
+        session_id=session_id
+    )
+    
+    # Save Assistant message
+    ChatMessage.objects.create(
+        user=request.user if request.user.is_authenticated else None,
+        role='assistant',
+        content=ai_response,
+        session_id=session_id
+    )
+    
+    return JsonResponse({'response': ai_response})
+@staff_member_required
+def chat_logs(request):
+    """
+    View all AI chat logs grouped by session.
+    """
+    from .models import ChatMessage
+    from django.db.models import Max
+    
+    # Get all unique session IDs ordered by their most recent message
+    sessions = ChatMessage.objects.values('session_id').annotate(
+        last_message=Max('created_at')
+    ).order_by('-last_message')
+    
+    # For each session, get all messages
+    logs = []
+    for s in sessions:
+        msgs = ChatMessage.objects.filter(session_id=s['session_id']).order_by('created_at')
+        if msgs.exists():
+            logs.append({
+                'session_id': s['session_id'],
+                'user': msgs.first().user,
+                'messages': msgs,
+                'last_updated': s['last_message']
+            })
+            
+    return render(request, 'core/chat_logs.html', {'logs': logs})

@@ -79,40 +79,67 @@
         </div>
       </div>
 
-      <!-- Quick Links Card -->
-      <div class="dash-card card">
+      <!-- Tournament Enrollment Card -->
+      <div class="dash-card card" style="grid-column: 1 / -1; margin-bottom: 2rem;">
         <div class="dash-card__header">
-          <h2 class="dash-card__title">Quick Links</h2>
+          <h2 class="dash-card__title">🏆 Tournament Enrollment</h2>
+          <p class="dash-card__subtitle">Join active seasons and compete for glory</p>
         </div>
-        <div class="dash-card__body">
-          <nav class="dash-links">
-            <a href="{% url 'team_list' %}" class="dash-links__item">
-              <span class="dash-links__icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              </span>
-              <span class="dash-links__text">Browse Teams</span>
-            </a>
-            <a href="{% url 'team_create' %}" class="dash-links__item">
-              <span class="dash-links__icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-              </span>
-              <span class="dash-links__text">Create Team</span>
-            </a>
-            <a href="#standings" class="dash-links__item">
-              <span class="dash-links__icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              </span>
-              <span class="dash-links__text">Season Standings</span>
-            </a>
-            <a href="#" class="dash-links__item">
-              <span class="dash-links__icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              </span>
-              <span class="dash-links__text">Account Settings</span>
-            </a>
-          </nav>
+        <div class="dash-card__body" style="padding: 0;">
+          {% if all_seasons %}
+            <!-- Season Tabs -->
+            <div class="season-tabs-header" style="display: flex; gap: 0.5rem; padding: 0 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); overflow-x: auto; background: rgba(0,0,0,0.1);">
+              {% for s in all_seasons %}
+              <button type="button" class="season-tab-btn {% if s.id == first_active_season_id %}active{% endif %}" onclick="openSeasonTab(event, 'season-{{ s.id }}')" style="background: none; border: none; border-bottom: 2px solid {% if s.id == first_active_season_id %}var(--accent){% else %}transparent{% endif %}; color: {% if s.id == first_active_season_id %}var(--text-light){% else %}var(--text-muted){% endif %}; padding: 0.85rem 1.25rem; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+                {{ s.name }}
+                {% if s.is_active %}<span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #34a853; margin-left: 6px; vertical-align: middle;"></span>{% endif %}
+              </button>
+              {% endfor %}
+            </div>
+
+            <div class="season-tabs-content">
+              {% for s in all_seasons %}
+              <div id="season-{{ s.id }}" class="season-pane" style="display: {% if s.id == first_active_season_id %}block{% else %}none{% endif %}; padding: 1.5rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                  {% for p in s.available_participations %}
+                  <div class="participation-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, background 0.2s;">
+                    <div>
+                      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; background: rgba(var(--accent-rgb), 0.1); color: var(--accent); font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">{{ p.game_type.name }}</span>
+                        <span style="font-weight: 800; font-size: 1.2rem; color: var(--text-light);">KES {{ p.charge }}</span>
+                      </div>
+                      <h3 style="margin: 0 0 0.5rem; font-size: 1.1rem; font-weight: 700;">{{ p.name }}</h3>
+                      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Enroll in this category to participate in the {{ s.name }} tournament.</p>
+                    </div>
+                    
+                    {% if p.is_enrolled %}
+                      <button class="btn btn--success" style="width: 100%; cursor: default; opacity: 0.8;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right: 8px;"><polyline points="20 6 9 17 4 12"/></svg>
+                        Enrolled
+                      </button>
+                    {% else %}
+                      <button class="btn btn--primary" onclick="showEnrollModal('{{ p.id }}', '{{ p.name }}', '{{ p.charge }}')" style="width: 100%;">
+                        Enroll Now
+                      </button>
+                    {% endif %}
+                  </div>
+                  {% empty %}
+                  <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
+                    No participation categories available for this season.
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="padding: 3rem; text-align: center; color: var(--text-muted);">
+              No active or upcoming seasons found.
+            </div>
+          {% endif %}
         </div>
       </div>
+
 
       <!-- My Fixtures Card -->
       <div class="dash-card card" style="grid-column: 1 / -1;">
@@ -127,6 +154,7 @@
                   <tr>
                     <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Type</th>
                     <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Round &amp; Category</th>
+                    <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Date &amp; Time</th>
                     <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Opponent</th>
                     <th style="padding: 1rem 1.5rem; text-align: right; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
                   </tr>
@@ -140,6 +168,10 @@
                     <td style="padding: 1.25rem 1.5rem;">
                       <p style="margin: 0; font-weight: 600;">{{ c.round.name }}</p>
                       <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">{{ c.round.game_type.name }} • {{ c.round.season.name }}</p>
+                    </td>
+                    <td style="padding: 1.25rem 1.5rem;">
+                      <p style="margin: 0; font-weight: 600;">{{ c.start_datetime|date:"M d, Y" }}</p>
+                      <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">{{ c.start_datetime|date:"h:i A" }}</p>
                     </td>
                     <td style="padding: 1.25rem 1.5rem;">
                       {% if c.player_1 == user %}
@@ -165,6 +197,10 @@
                     <td style="padding: 1.25rem 1.5rem;">
                       <p style="margin: 0; font-weight: 600;">{{ c.round.name }}</p>
                       <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">{{ c.round.game_type.name }} • {{ c.round.season.name }}</p>
+                    </td>
+                    <td style="padding: 1.25rem 1.5rem;">
+                      <p style="margin: 0; font-weight: 600;">{{ c.start_datetime|date:"M d, Y" }}</p>
+                      <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">{{ c.start_datetime|date:"h:i A" }}</p>
                     </td>
                     <td style="padding: 1.25rem 1.5rem;">
                       {% if c.team_1 in user.member_teams.all %}
@@ -250,8 +286,103 @@
     </div>
   </div>
 </section>
+<!-- Enrollment Modal -->
+<div id="enrollModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);">
+  <div class="modal-content card" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 450px; padding: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h2 style="margin: 0; font-size: 1.5rem; font-weight: 800;">Enroll in <span id="modalParticipationName"></span></h2>
+      <button onclick="closeEnrollModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">You are about to enroll. A payment of <span id="modalParticipationCharge" style="color: var(--text-light); font-weight: 700;"></span> will be required via M-Pesa STK Push.</p>
+    
+    <form id="enrollForm" method="POST" action="" onsubmit="return handleEnrollSubmit(this)">
+      {% csrf_token %}
+      <div class="form-group" style="margin-bottom: 2rem;">
+        <label for="phone_number" style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 600;">M-Pesa Phone Number</label>
+        <input type="text" id="phone_number" name="phone_number" value="{{ user.primary_phone|default:'' }}" placeholder="e.g. 0712345678" required style="width: 100%; padding: 0.85rem 1rem; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-light); font-size: 1rem;">
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Enter the phone number that will receive the STK PIN prompt.</p>
+      </div>
+      <button type="submit" id="enrollSubmitBtn" class="btn btn--primary" style="width: 100%; padding: 1rem;">
+        <span class="btn-text">Confirm &amp; Get STK Prompt</span>
+        <span class="btn-loader" style="display: none;">
+          <svg class="spinner" width="20" height="20" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite;"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke: #fff; animation: dash 1.5s ease-in-out infinite;"></circle></svg>
+          Processing...
+        </span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+@keyframes rotate { 100% { transform: rotate(360deg); } }
+@keyframes dash {
+  0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+  50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+  100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+}
+.btn--primary:disabled { opacity: 0.7; cursor: not-allowed; }
+</style>
+
 
 <script>
+function openSeasonTab(evt, seasonId) {
+  var panes = document.getElementsByClassName("season-pane");
+  for (var i = 0; i < panes.length; i++) panes[i].style.display = "none";
+  
+  var btns = document.getElementsByClassName("season-tab-btn");
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove("active");
+    btns[i].style.borderBottomColor = "transparent";
+    btns[i].style.color = "var(--text-muted)";
+  }
+  
+  document.getElementById(seasonId).style.display = "block";
+  evt.currentTarget.classList.add("active");
+  evt.currentTarget.style.borderBottomColor = "var(--accent)";
+  evt.currentTarget.style.color = "var(--text-light)";
+}
+
+function showEnrollModal(pId, pName, pCharge) {
+  document.getElementById('modalParticipationName').innerText = pName;
+  document.getElementById('modalParticipationCharge').innerText = "KES " + pCharge;
+  
+  var form = document.getElementById('enrollForm');
+  var url = "{% url 'initiate_enrollment_payment' 0 %}".replace('/0/', '/' + pId + '/');
+  form.action = url;
+  
+  // Reset button state
+  var btn = document.getElementById('enrollSubmitBtn');
+  btn.disabled = false;
+  btn.querySelector('.btn-text').style.display = 'inline';
+  btn.querySelector('.btn-loader').style.display = 'none';
+  
+  document.getElementById('enrollModal').style.display = 'block';
+}
+
+function handleEnrollSubmit(form) {
+  var btn = document.getElementById('enrollSubmitBtn');
+  btn.disabled = true;
+  btn.querySelector('.btn-text').style.display = 'none';
+  btn.querySelector('.btn-loader').style.display = 'flex';
+  btn.querySelector('.btn-loader').style.alignItems = 'center';
+  btn.querySelector('.btn-loader').style.justifyContent = 'center';
+  btn.querySelector('.btn-loader').style.gap = '10px';
+  return true;
+}
+
+function closeEnrollModal() {
+  document.getElementById('enrollModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+  var modal = document.getElementById('enrollModal');
+  if (event.target == modal) {
+    closeEnrollModal();
+  }
+}
+
 function openCategoryTab(evt, catId) {
   var panes = document.getElementsByClassName("cat-pane");
   for (var i = 0; i < panes.length; i++) panes[i].style.display = "none";

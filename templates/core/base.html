@@ -39,13 +39,13 @@
 
       <nav class="nav" aria-label="Primary">
         <ul class="nav__list">
-          <li><a class="nav__link" href="#schedule">Schedule</a></li>
-          <li><a class="nav__link" href="#game-types">Formats</a></li>
-          <li><a class="nav__link" href="#standings">Standings</a></li>
-          <li><a class="nav__link" href="#gallery">Gallery</a></li>
-          <li><a class="nav__link" href="#faq">FAQ</a></li>
-          <li><a class="nav__link" href="#contact">Contact</a></li>
-          <li><a class="nav__link" href="#rules">Rules</a></li>
+          <li><a class="nav__link" href="{% url 'home' %}#schedule">Schedule</a></li>
+          <li><a class="nav__link" href="{% url 'home' %}#game-types">Formats</a></li>
+          <li><a class="nav__link" href="{% url 'home' %}#standings">Standings</a></li>
+          <li><a class="nav__link" href="{% url 'home' %}#gallery">Gallery</a></li>
+          <li><a class="nav__link" href="{% url 'home' %}#faq">FAQ</a></li>
+          <li><a class="nav__link" href="{% url 'home' %}#contact">Contact</a></li>
+          <li><a class="nav__link" href="{% url 'home' %}#rules">Rules</a></li>
           <li><a class="nav__link" href="{% url 'team_list' %}">Teams</a></li>
           {% if user.is_authenticated %}
             {% if user.is_staff %}
@@ -113,11 +113,11 @@
         <div class="site-footer__nav">
           <h2 class="site-footer__heading">Tournament</h2>
           <ul class="site-footer__list">
-            <li><a href="#schedule" class="site-footer__link">Schedule</a></li>
-            <li><a href="#game-types" class="site-footer__link">Formats</a></li>
-            <li><a href="#standings" class="site-footer__link">Standings</a></li>
-            <li><a href="#register" class="site-footer__link">Register</a></li>
-            <li><a href="#rules" class="site-footer__link">Rules & Regs</a></li>
+            <li><a href="{% url 'home' %}#schedule" class="site-footer__link">Schedule</a></li>
+            <li><a href="{% url 'home' %}#game-types" class="site-footer__link">Formats</a></li>
+            <li><a href="{% url 'home' %}#standings" class="site-footer__link">Standings</a></li>
+            <li><a href="{% url 'home' %}#register" class="site-footer__link">Register</a></li>
+            <li><a href="{% url 'home' %}#rules" class="site-footer__link">Rules & Regs</a></li>
           </ul>
         </div>
 
@@ -127,8 +127,8 @@
             <li><a href="#" class="site-footer__link">Player Guide</a></li>
             <li><a href="#" class="site-footer__link">Sponsorship</a></li>
             <li><a href="#" class="site-footer__link">Media Kit</a></li>
-            <li><a href="#faq" class="site-footer__link">FAQ</a></li>
-            <li><a href="#contact" class="site-footer__link">Contact</a></li>
+            <li><a href="{% url 'home' %}#faq" class="site-footer__link">FAQ</a></li>
+            <li><a href="{% url 'home' %}#contact" class="site-footer__link">Contact</a></li>
           </ul>
         </div>
 
@@ -154,5 +154,6 @@
       </div>
     </div>
   </footer>
+  {% include "core/ai_chat_widget.html" %}
 </body>
 </html>

@@ -1,0 +1,65 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}AI Chat Logs | Metro Lanes Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div>
+        <p class="dash-header__eyebrow">Monitoring Portal</p>
+        <h1 class="dash-header__title">AI Assistant Logs</h1>
+      </div>
+      <a href="{% url 'admin_dashboard' %}" class="btn btn--ghost">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <div class="dash-content">
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+      
+      {% for session in logs %}
+      <div class="card" style="padding: 0; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(18,23,34,0.4);">
+        <div style="padding: 1rem 1.5rem; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-weight: 600; font-size: 0.9rem;">
+              {% if session.user %}{{ session.user.get_full_name }} ({{ session.user.email }}){% else %}Anonymous User{% endif %}
+            </span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 1rem;">Session: {{ session.session_id|slice:":8" }}...</span>
+          </div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Last activity: {{ session.last_updated|date:"M d, H:i" }}</span>
+        </div>
+        
+        <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; max-height: 400px; overflow-y: auto; background: rgba(0,0,0,0.2);">
+          {% for msg in session.messages %}
+          <div style="max-width: 80%; padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.9rem; line-height: 1.4;
+                      {% if msg.role == 'user' %}
+                        align-self: flex-end; background: var(--accent); color: #0c0f14; border-bottom-right-radius: 4px;
+                      {% else %}
+                        align-self: flex-start; background: rgba(255,255,255,0.05); color: #e8ecf4; border-bottom-left-radius: 4px;
+                      {% endif %}">
+            <div style="font-size: 0.7rem; margin-bottom: 0.25rem; opacity: 0.7; font-weight: 700; text-transform: uppercase;">
+              {{ msg.role }} • {{ msg.created_at|date:"H:i" }}
+            </div>
+            {{ msg.content|linebreaksbr }}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% empty %}
+      <div class="card" style="text-align: center; padding: 4rem;">
+        <p style="color: var(--text-muted);">No chat logs found yet. Start a conversation with the AI to see logs here.</p>
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Custom scrollbar for chat logs */
+  div::-webkit-scrollbar { width: 6px; }
+  div::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+  div::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+</style>
+{% endblock %}

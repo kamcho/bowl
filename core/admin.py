@@ -4,7 +4,7 @@ from .models import (
     User, Season, GameType, Participation, GameRules,
     Team, Round, SinglesChallenge, TeamChallenge,
     SinglesFrame, TeamFrame, SinglesRoll, TeamRoll,
-    SeasonSchedule
+    SeasonSchedule, CustomerInquiry, ChatMessage
 )
 
 
@@ -121,3 +121,15 @@ class TeamRollAdmin(admin.ModelAdmin):
 
 
 admin.site.register(User, UserAdmin)
+
+@admin.register(CustomerInquiry)
+class CustomerInquiryAdmin(admin.ModelAdmin):
+    list_display = ('phone_number', 'created_at', 'is_processed')
+    list_filter = ('is_processed', 'created_at')
+    search_fields = ('phone_number', 'inquiry_text')
+
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = ('role', 'user', 'created_at', 'session_id')
+    list_filter = ('role', 'created_at')
+    search_fields = ('content', 'user__email', 'session_id')

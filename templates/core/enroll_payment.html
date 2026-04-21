@@ -1,0 +1,46 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2 class="auth-title">Enroll in {{ participation.name }}</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem; text-align: center;">
+            You are enrolling in <strong>{{ participation.game_type.name }}</strong> for <strong>{{ participation.season.name }}</strong>.
+            <br>
+            Enrollment Fee: <span style="color: var(--accent); font-weight: 700;">KES {{ participation.charge }}</span>
+        </p>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="phone_number" class="form-label">M-Pesa Phone Number</label>
+                <input type="text" name="phone_number" id="phone_number" class="form-control" 
+                       placeholder="e.g. 0712345678" required 
+                       value="{{ request.user.primary_phone|default:'' }}">
+                <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem; display: block;">
+                    Enter the phone number you'll use for the M-Pesa payment.
+                </small>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <button type="submit" class="btn btn--primary btn--full">Initiate M-Pesa Payment</button>
+            </div>
+            
+            <div style="margin-top: 1rem; text-align: center;">
+                <a href="{% url 'dashboard' %}" class="btn btn--ghost" style="width: 100%; justify-content: center;">Cancel</a>
+            </div>
+        </form>
+
+        <div style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.05);">
+            <h4 style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 0.5rem;">How it works:</h4>
+            <ol style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.25rem;">
+                <li>Click "Initiate M-Pesa Payment"</li>
+                <li>Wait for an M-Pesa PIN prompt on your phone</li>
+                <li>Enter your PIN to authorize the payment</li>
+                <li>Your enrollment will be confirmed automatically once the payment is processed</li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}

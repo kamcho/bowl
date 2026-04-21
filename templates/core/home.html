@@ -10,7 +10,7 @@
       Team brackets, certified lanes, and live standings — Metro’s biggest amateur open is back.
     </p>
     <div class="hero__actions">
-      <a class="btn btn--primary" href="#register">Enter your team</a>
+      {% if user.is_authenticated %}<a class="btn btn--primary" href="#register">Enter your team</a>{% else %}<a class="btn btn--primary" href="{% url 'account_login' %}?next={% url 'home' %}#register">Login to Enroll</a>{% endif %}
       <a class="btn btn--ghost" href="#schedule">View schedule</a>
     </div>
     <dl class="hero__stats">
@@ -302,44 +302,50 @@
   <div class="section__inner section__inner--wide">
     <header class="section__header">
       <p class="section__eyebrow">Join the field</p>
-      <h2 id="register-heading" class="section__title">Register</h2>
+      <h2 id="register-heading" class="section__title">Available Tournaments</h2>
       <p class="section__intro">
-        Entry closes <strong>April 10, 2026</strong> or when divisions sell out. Pay at the counter or by invoice for house accounts.
+        Enroll in our active divisions for the <strong>{{ active_season.name|default:"upcoming season" }}</strong>.
+        Pay instantly via M-Pesa to secure your spot.
+        {% if not user.is_authenticated %}
+          <br><br>
+          <a href="{% url 'account_login' %}?next={% url 'home' %}#register" class="btn btn--primary">Login to Begin Registration</a>
+        {% endif %}
       </p>
     </header>
 
-    <div class="register-layout">
-      <div class="card register-fees">
-        <h3 class="register-fees__title">Entry fees</h3>
-        <table class="register-fees__table">
-          <tbody>
-            <tr>
-              <th scope="row">Singles</th>
-              <td>$95</td>
-            </tr>
-            <tr>
-              <th scope="row">Doubles <span class="register-fees__hint">(per team)</span></th>
-              <td>$160</td>
-            </tr>
-            <tr>
-              <th scope="row">Trios <span class="register-fees__hint">(per team)</span></th>
-              <td>$210</td>
-            </tr>
-          </tbody>
-        </table>
-        <p class="register-fees__note">USBC sanction fee included. Optional practice pass $25 (subject to lane availability).</p>
+    <div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+      {% for p in participations %}
+      <div class="card" style="padding: 1.5rem; display: flex; flex-direction: column; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+          <h3 style="font-size: 1.25rem; color: var(--text-light); margin: 0;">{{ p.name }}</h3>
+          <span class="badge badge--active">KES {{ p.charge }}</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; flex-grow: 1;">
+          {{ p.game_type.description|truncatewords:20 }}
+        </p>
+        
+        {% if user.is_authenticated %}
+          {% if user in p.enrolled_users.all %}
+            <button class="btn btn--ghost btn--full" disabled style="cursor: default; opacity: 0.7;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;"><polyline points="20 6 9 17 4 12"/></svg>
+              Already Enrolled
+            </button>
+          {% else %}
+            <a href="{% url 'initiate_enrollment_payment' p.id %}" class="btn btn--primary btn--full">
+              Enroll with M-Pesa
+            </a>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'account_login' %}?next={% url 'initiate_enrollment_payment' p.id %}" class="btn btn--ghost btn--full">
+            Login to Enroll
+          </a>
+        {% endif %}
       </div>
-      <div class="card register-steps">
-        <h3 class="register-steps__title">How to enter</h3>
-        <ol class="register-steps__list">
-          <li>Pick your format and teammates (rosters lock before Week 1).</li>
-          <li>Email the desk with team name, division, and bowler names.</li>
-          <li>Pay entry by deadline; you’ll receive squad assignment and rule PDF.</li>
-          <li>Show ID and proof of average at check-in for handicap events.</li>
-        </ol>
-        <a class="btn btn--primary register-steps__cta" href="mailto:register@metrolanes.com?subject=Metro%20Open%202026%20registration&amp;body=Format%3A%0ATeam%20name%3A%0ABowler%20names%20%2B%20USBC%20%23s%3A">Email to register</a>
-        <p class="register-steps__alt">Or call <a href="tel:+15555550123">(555) 555-0123</a> ext. 4 during desk hours.</p>
+      {% empty %}
+      <div class="card" style="grid-column: 1 / -1; padding: 3rem; text-align: center; background: rgba(255,255,255,0.02);">
+        <p style="color: var(--text-muted); margin: 0;">No active tournament enrollments available at this time.</p>
       </div>
+      {% endfor %}
     </div>
   </div>
 </section>

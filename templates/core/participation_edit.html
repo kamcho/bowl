@@ -57,41 +57,46 @@
       <!-- Enrollments Panel (Full Width) -->
       <div class="dash-card card" style="margin-bottom: 2rem;">
         <div class="dash-card__header" style="display: flex; justify-content: space-between; align-items: center;">
-          <h2 class="dash-card__title">Manage {% if is_single %}Users{% else %}Teams{% endif %}</h2>
+          <div onclick="toggleAccordion('enrollment-accordion')" style="cursor: pointer; display: flex; align-items: center; gap: 0.75rem; flex: 1;">
+            <h2 class="dash-card__title">Manage {% if is_single %}Users{% else %}Teams{% endif %}</h2>
+            <span id="accordion-chevron" style="color: var(--text-muted); font-size: 0.7rem; transition: transform 0.3s; transform: rotate(0deg);">▼</span>
+          </div>
           <div>
             <button type="button" class="btn btn--ghost" onclick="openDrawer()" style="margin-right: 0.5rem;">⚙️ Edit Core Details</button>
             <button type="submit" class="btn btn--primary">Save All Changes</button>
           </div>
         </div>
-        <div class="dash-card__body">
-          <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
-            Hold down <strong>Ctrl</strong> (Windows) or <strong>Cmd</strong> (Mac) to select multiple options.
-          </p>
+        <div id="enrollment-accordion" style="max-height: 2000px; overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1);">
+          <div class="dash-card__body">
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
+              Hold down <strong>Ctrl</strong> (Windows) or <strong>Cmd</strong> (Mac) to select multiple options.
+            </p>
 
-          <div class="dash-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
-            
-            {% if is_single %}
-            <!-- Users -->
-            <div class="form-group" style="margin: 0;">
-              <label for="{{ form.enrolled_users.id_for_label }}" class="form-label">Enrolled Users</label>
-              {{ form.enrolled_users.errors }}
-              <div class="enrollment-list-wrapper">
-                {{ form.enrolled_users }}
+            <div class="dash-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
+              
+              {% if is_single %}
+              <!-- Users -->
+              <div class="form-group" style="margin: 0;">
+                <label for="{{ form.enrolled_users.id_for_label }}" class="form-label">Enrolled Users</label>
+                {{ form.enrolled_users.errors }}
+                <div class="enrollment-list-wrapper">
+                  {{ form.enrolled_users }}
+                </div>
               </div>
-            </div>
-            <div style="display: none;">{{ form.enrolled_teams }}</div>
-            {% else %}
-            <!-- Teams -->
-            <div class="form-group" style="margin: 0;">
-              <label for="{{ form.enrolled_teams.id_for_label }}" class="form-label">Enrolled Teams</label>
-              {{ form.enrolled_teams.errors }}
-              <div class="enrollment-list-wrapper">
-                {{ form.enrolled_teams }}
+              <div style="display: none;">{{ form.enrolled_teams }}</div>
+              {% else %}
+              <!-- Teams -->
+              <div class="form-group" style="margin: 0;">
+                <label for="{{ form.enrolled_teams.id_for_label }}" class="form-label">Enrolled Teams</label>
+                {{ form.enrolled_teams.errors }}
+                <div class="enrollment-list-wrapper">
+                  {{ form.enrolled_teams }}
+                </div>
               </div>
-            </div>
-            <div style="display: none;">{{ form.enrolled_users }}</div>
-            {% endif %}
+              <div style="display: none;">{{ form.enrolled_users }}</div>
+              {% endif %}
 
+            </div>
           </div>
         </div>
       </div>
@@ -154,6 +159,7 @@
         <div id="lb-footer" style="padding: 1.5rem 2rem; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.1); display: none;">
           <button id="btn-complete-round" class="btn btn--primary" style="width: 100%; justify-content: center;">Mark Round as Completed</button>
           <div id="round-completed-badge" style="display: none; text-align: center; color: #34a853; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">✅ Round Completed</div>
+          <button id="btn-promote-selected" class="btn btn--accent" style="width: 100%; justify-content: center; margin-top: 1rem; display: none;">Promote Selected</button>
         </div>
       </div>
 
@@ -197,11 +203,23 @@
             <h3 style="margin: 0 0 0.75rem; font-size: 1rem; color: var(--text-light);">Promote winners</h3>
             <form method="post" action="{% url 'participation_promote_winners' participation.pk %}">
               {% csrf_token %}
-              <div class="form-group" style="margin-bottom: 1rem;">
+              <div class="form-group" style="margin-bottom: 0.75rem;">
                 <label class="form-label" for="{{ promote_form.from_round.id_for_label }}">{{ promote_form.from_round.label }}</label>
                 {{ promote_form.from_round }}
               </div>
-              <button type="submit" class="btn btn--primary" style="width: 100%;">Pair winners into next empty round</button>
+              <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label class="form-label" for="{{ promote_form.criteria.id_for_label }}">Promotion Criteria</label>
+                {{ promote_form.criteria }}
+              </div>
+              <div id="percentage-field-wrap" class="form-group" style="margin-bottom: 1rem; display: none;">
+                <label class="form-label" for="{{ promote_form.percentage.id_for_label }}">
+                  Percentage: <span id="percentage-value" style="color: var(--accent); font-weight: 700;">50</span>%
+                  <span id="estimated-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;"></span>
+                </label>
+                {{ promote_form.percentage }}
+                <small style="color: var(--text-muted); font-size: 0.75rem;">Top X% by total round score</small>
+              </div>
+              <button type="submit" class="btn btn--primary" style="width: 100%;">Run Bulk Promotion</button>
             </form>
           </div>
 
@@ -249,7 +267,7 @@
       <div class="tabs-header" style="display: flex; gap: 0.5rem; padding: 0 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); overflow-x: auto;">
         {% for r in rounds %}
         <button type="button" class="tab-btn {% if forloop.first %}active{% endif %}" onclick="openTab(event, 'round-{{ r.id }}')" style="background: none; border: none; border-bottom: 2px solid {% if forloop.first %}var(--accent){% else %}transparent{% endif %}; color: {% if forloop.first %}var(--text-light){% else %}var(--text-muted){% endif %}; padding: 0.75rem 1rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
-          {{ r.name }}{% if is_single %} <span style="font-weight:500;opacity:0.75;">({{ r.singles_match_count }})</span>{% else %} <span style="font-weight:500;opacity:0.75;">({{ r.team_match_count }})</span>{% endif %}
+          <span style="opacity:0.5; margin-right:0.4rem; font-family: monospace;">#{{ r.order }}</span> {{ r.name }} <span style="font-weight:500;opacity:0.75;margin-left:0.4rem;">({% if is_single %}{{ r.participant_count }}{% else %}{{ r.team_count }}{% endif %})</span>
         </button>
         {% endfor %}
       </div>
@@ -319,6 +337,9 @@ function openTab(evt, tabId) {
   evt.currentTarget.classList.add("active");
   evt.currentTarget.style.borderBottomColor = "var(--accent)";
   evt.currentTarget.style.color = "var(--text-light)";
+  
+  // Persist tab in URL
+  window.location.hash = tabId;
 }
 
 function showLeaderboard(roundId) {
@@ -334,14 +355,15 @@ function showLeaderboard(roundId) {
     .then(data => {
       if (data.ok) {
         document.getElementById('lb-round-name').innerText = data.round_name + ' Rankings';
-        var html = '<table style="width:100%; border-collapse: collapse; font-size: 0.95rem;">';
+        var html = '<table style="width:100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">';
         html += `<thead style="position: sticky; top: -1.5rem; background: var(--bg-deep); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.1);">
           <tr>
-            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;">Rank</th>
-            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;">Participant</th>
-            <th style="padding:0.75rem 0.5rem; text-align:right; color:var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;">Round</th>
-            <th style="padding:0.75rem 0.5rem; text-align:right; color:var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;">Total</th>
-            <th style="padding:0.75rem 0.5rem; text-align:right; color:var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;">Action</th>
+            <th style="padding:0.6rem 0.2rem; text-align:left; width: 25px;"><input type="checkbox" id="lb-select-all" onclick="toggleAllLeaderboard(this)"></th>
+            <th style="padding:0.6rem 0.2rem; text-align:left; color:var(--text-muted); font-size: 0.65rem; text-transform: uppercase; width: 35px;">Rank</th>
+            <th style="padding:0.6rem 0.2rem; text-align:left; color:var(--text-muted); font-size: 0.65rem; text-transform: uppercase;">Name</th>
+            <th style="padding:0.6rem 0.2rem; text-align:right; color:var(--text-muted); font-size: 0.65rem; text-transform: uppercase; width: 45px;">Rnd</th>
+            <th style="padding:0.6rem 0.2rem; text-align:right; color:var(--text-muted); font-size: 0.65rem; text-transform: uppercase; width: 45px;">Tot</th>
+            <th style="padding:0.6rem 0.2rem; text-align:right; color:var(--text-muted); font-size: 0.65rem; text-transform: uppercase; width: 75px;">Action</th>
           </tr>
         </thead>`;
         html += '<tbody>';
@@ -350,14 +372,17 @@ function showLeaderboard(roundId) {
           var medal = item.rank === 1 ? '🥇' : (item.rank === 2 ? '🥈' : (item.rank === 3 ? '🥉' : ''));
           var isWinner = item.won_match;
           html += `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05); ${isTop ? 'background: rgba(255,215,0,0.03);' : ''}">
-            <td style="padding:0.85rem 0.5rem; font-weight:700; color:${item.rank===1 ? '#ffd700' : (item.rank===2 ? '#c0c0c0' : (item.rank===3 ? '#cd7f32' : 'var(--text-muted)'))};">${medal || item.rank}</td>
-            <td style="padding:0.85rem 0.5rem; font-weight:600;">
-              ${item.name} ${isWinner ? '<span title="Match Winner" style="margin-left:0.4rem; filter: drop-shadow(0 0 5px rgba(255,215,0,0.5));">👑</span>' : ''}
+            <td style="padding:0.75rem 0.2rem;">
+              ${item.can_promote && !item.is_enrolled_next ? `<input type="checkbox" class="lb-item-checkbox" value="${item.id}" onclick="updateBulkPromoteBtn()">` : ''}
             </td>
-            <td style="padding:0.85rem 0.5rem; text-align:right; font-weight:800; color:var(--accent);">${item.round_score}</td>
-            <td style="padding:0.85rem 0.5rem; text-align:right; font-weight:700; color:var(--text-light);">${item.total_pins}</td>
-            <td style="padding:0.85rem 0.5rem; text-align:right;">
-              ${item.is_enrolled_next ? '<span style="font-size:0.7rem; color:var(--accent); font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">Enrolled</span>' : (item.can_promote ? `<button onclick="promoteParticipant('${item.id}', '${roundId}')" class="btn btn--sm" style="padding:0.2rem 0.5rem; font-size:0.7rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-muted);">Promote</button>` : '<span style="font-size:0.7rem; color:var(--text-muted); opacity:0.5;">—</span>')}
+            <td style="padding:0.75rem 0.2rem; font-weight:700; color:${item.rank===1 ? '#ffd700' : (item.rank===2 ? '#c0c0c0' : (item.rank===3 ? '#cd7f32' : 'var(--text-muted)'))};">${medal || item.rank}</td>
+            <td style="padding:0.75rem 0.2rem; font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              ${item.name} ${isWinner ? '<span title="Match Winner" style="margin-left:0.2rem;">👑</span>' : ''}
+            </td>
+            <td style="padding:0.75rem 0.2rem; text-align:right; font-weight:800; color:var(--accent);">${item.round_score}</td>
+            <td style="padding:0.75rem 0.2rem; text-align:right; font-weight:700; color:var(--text-light);">${item.total_pins}</td>
+            <td style="padding:0.75rem 0.2rem; text-align:right;">
+              ${item.is_enrolled_next ? '<span style="font-size:0.65rem; color:var(--accent); font-weight:700; text-transform:uppercase;">Enrolled</span>' : (item.can_promote ? `<button onclick="promoteParticipant('${item.id}', '${roundId}')" class="btn btn--sm" style="padding:0.15rem 0.4rem; font-size:0.65rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-muted);">Promote</button>` : '<span style="font-size:0.65rem; color:var(--text-muted); opacity:0.5;">—</span>')}
             </td>
           </tr>`;
         });
@@ -368,8 +393,12 @@ function showLeaderboard(roundId) {
         var footer = document.getElementById('lb-footer');
         var btn = document.getElementById('btn-complete-round');
         var badge = document.getElementById('round-completed-badge');
+        var promoteBtn = document.getElementById('btn-promote-selected');
         
         footer.style.display = 'block';
+        promoteBtn.style.display = 'none';
+        promoteBtn.onclick = function() { promoteSelected(roundId); };
+
         if (data.is_completed) {
           btn.style.display = 'none';
           badge.style.display = 'block';
@@ -426,7 +455,55 @@ function closeLeaderboard() {
   document.getElementById('settings-backdrop').style.display = 'none';
 }
 
+function toggleAllLeaderboard(master) {
+  var checkboxes = document.querySelectorAll('.lb-item-checkbox');
+  checkboxes.forEach(cb => cb.checked = master.checked);
+  updateBulkPromoteBtn();
+}
+
+function updateBulkPromoteBtn() {
+  var checked = document.querySelectorAll('.lb-item-checkbox:checked').length;
+  var btn = document.getElementById('btn-promote-selected');
+  if (checked > 0) {
+    btn.style.display = 'block';
+    btn.innerText = `Promote Selected (${checked})`;
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+function promoteSelected(roundId) {
+  var checked = document.querySelectorAll('.lb-item-checkbox:checked');
+  if (checked.length === 0) return;
+  
+  if (!confirm(`Promote ${checked.length} participants to the next round?`)) return;
+  
+  var url = "{% url 'participation_manual_promote' participation.pk 888888888 %}".replace('888888888', roundId);
+  var formData = new FormData();
+  checked.forEach(cb => formData.append('target_ids[]', cb.value));
+  formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+  
+  fetch(url, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        alert(data.message);
+        showLeaderboard(roundId); // Refresh
+      } else {
+        alert('Error: ' + data.error);
+      }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+  var hash = window.location.hash;
+  if (hash) {
+    var btn = document.querySelector(`.tab-btn[onclick*="${hash.replace('#','')}"]`);
+    if (btn) {
+      btn.click();
+      return;
+    }
+  }
   var first = document.querySelector('.tab-pane[data-panel-url]');
   if (first) loadRoundPanel(first);
 });
@@ -562,6 +639,18 @@ document.addEventListener('keypress', function(e) {
     submitQuickScore(e.target);
   }
 });
+
+function toggleAccordion(id) {
+  var content = document.getElementById(id);
+  var chevron = document.getElementById('accordion-chevron');
+  if (content.style.maxHeight === '0px') {
+    content.style.maxHeight = '2000px';
+    chevron.style.transform = 'rotate(0deg)';
+  } else {
+    content.style.maxHeight = '0px';
+    chevron.style.transform = 'rotate(-90deg)';
+  }
+}
 
 function closeDrawer() {
   document.getElementById('settings-drawer').style.right = '-400px';
@@ -725,7 +814,64 @@ function closeDrawer() {
 </style>
 
 <script>
+function togglePercentageField(select) {
+  const wrap = document.getElementById('percentage-field-wrap');
+  if (select.value === 'top_winners' || select.value === 'top_percentage') {
+    wrap.style.display = 'block';
+    updatePercentageDisplay(document.querySelector('input[type="range"][name="percentage"]').value);
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+function updatePercentageDisplay(val) {
+  document.getElementById('percentage-value').innerText = val;
+  const roundSelect = document.querySelector('select[name="from_round"]');
+  const criteriaSelect = document.querySelector('select[name="criteria"]');
+  if (!roundSelect || !criteriaSelect) return;
+  
+  const roundId = roundSelect.value;
+  const criteria = criteriaSelect.value;
+  const counts = window.roundCounts[roundId] || { total: 0, winners: 0 };
+  
+  let total = counts.total;
+  if (criteria === 'top_winners') {
+    total = counts.winners;
+  }
+  
+  const count = Math.max(1, Math.floor(total * (val / 100.0)));
+  const label = "{% if is_single %}users{% else %}teams{% endif %}";
+  document.getElementById('estimated-count').innerText = ` (≈ ${count} ${label})`;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+  // Store counts for estimate calculation
+  window.roundCounts = {
+    {% for r in rounds %}
+      "{{ r.id }}": {
+        "total": {% if is_single %}{{ r.participant_count }}{% else %}{{ r.team_count }}{% endif %},
+        "winners": {% if is_single %}{{ r.singles_match_count }}{% else %}{{ r.team_match_count }}{% endif %}
+      },
+    {% endfor %}
+  };
+
+  const criteriaSelect = document.querySelector('select[name="criteria"]');
+  if (criteriaSelect) {
+    togglePercentageField(criteriaSelect);
+    criteriaSelect.addEventListener('change', () => togglePercentageField(criteriaSelect));
+  }
+  
+  const fromRoundSelect = document.querySelector('select[name="from_round"]');
+  if (fromRoundSelect) {
+    fromRoundSelect.addEventListener('change', () => {
+      const slider = document.querySelector('input[type="range"][name="percentage"]');
+      if (slider) updatePercentageDisplay(slider.value);
+    });
+  }
+
+  const rangeInput = document.querySelector('input[type="range"][name="percentage"]');
+  if (rangeInput) updatePercentageDisplay(rangeInput.value);
+  
   const multiSelects = document.querySelectorAll('select[multiple]');
   
   multiSelects.forEach(select => {

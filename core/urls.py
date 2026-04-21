@@ -77,4 +77,11 @@ urlpatterns = [
     path('manage/participations/<int:pk>/generate-fixtures/', views.participation_generate_fixtures, name='participation_generate_fixtures'),
     path('manage/participations/<int:pk>/rounds/<int:round_id>/manual-promote/', views.participation_manual_promote, name='participation_manual_promote'),
     path('manage/participations/<int:pk>/rounds/<int:round_id>/complete/', views.participation_round_complete, name='participation_round_complete'),
+
+    # M-Pesa
+    path('enroll/<int:pk>/pay/', views.initiate_enrollment_payment, name='initiate_enrollment_payment'),
+    path('api/mpesa/callback/', views.mpesa_callback, name='mpesa_callback'),
+    path('manage/payments/', views.payment_list, name='payment_list'),
+    path('chat/', views.chat_assistant, name='chat_assistant'),
+    path('manage/chats/', views.chat_logs, name='chat_logs'),
 ]

@@ -1,0 +1,197 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Payments | Metro Lanes Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <!-- Header -->
+  <div class="dash-header">
+    <div class="dash-header__inner">
+      <div class="dash-header__greeting">
+        <p class="dash-header__eyebrow">Finance Management</p>
+        <h1 class="dash-header__title">Payment Transactions</h1>
+        <p class="dash-header__email">Monitor enrollment revenue and status</p>
+      </div>
+      <div class="dash-header__actions">
+        <a class="btn btn--ghost" href="{% url 'admin_dashboard' %}">← Admin Portal</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-content">
+    
+    <!-- Season Tabs -->
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.08); overflow-x: auto; background: rgba(18,23,34,0.6); padding: 0 1.5rem; border-radius: 0.85rem 0.85rem 0 0;">
+      {% for s in seasons %}
+        <a href="?season={{ s.id }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if participation_filter %}&participation={{ participation_filter }}{% endif %}" 
+           class="season-tab-btn {% if selected_season.id == s.id %}active{% endif %}"
+           style="background: none; border: none; border-bottom: 2px solid {% if selected_season.id == s.id %}var(--accent){% else %}transparent{% endif %}; color: {% if selected_season.id == s.id %}var(--text-light){% else %}var(--text-muted){% endif %}; padding: 1rem 1.5rem; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none; transition: all 0.2s; white-space: nowrap;">
+          {{ s.name }}
+          {% if s.is_active %}<span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #34a853; margin-left: 6px; vertical-align: middle;"></span>{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- Stats Row -->
+    <div class="dash-stats" style="margin-bottom: 2rem;">
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Total Revenue ({{ selected_season.name }})</p>
+        <p class="dash-stat__value" style="color: var(--accent);">KES {{ total_revenue }}</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Successful</p>
+        <p class="dash-stat__value" style="color: #34a853;">{{ success_count }}</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Pending</p>
+        <p class="dash-stat__value" style="color: #fbbc05;">{{ pending_count }}</p>
+      </div>
+      <div class="dash-stat card">
+        <p class="dash-stat__label">Failed</p>
+        <p class="dash-stat__value" style="color: #ea4335;">{{ failed_count }}</p>
+      </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem; background: rgba(18,23,34,0.4);">
+      <form method="get" style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end;">
+        <input type="hidden" name="season" value="{{ selected_season.id }}">
+        
+        <div style="flex: 1; min-width: 150px;">
+          <label style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 700;">Status Filter</label>
+          <select name="status" class="form-control" onchange="this.form.submit()" style="margin: 0; width: 100%;">
+            <option value="">All Statuses</option>
+            <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+            <option value="SUCCESS" {% if status_filter == 'SUCCESS' %}selected{% endif %}>Success</option>
+            <option value="FAILED" {% if status_filter == 'FAILED' %}selected{% endif %}>Failed</option>
+          </select>
+        </div>
+
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 700;">Participation Filter</label>
+          <select name="participation" class="form-control" onchange="this.form.submit()" style="margin: 0; width: 100%;">
+            <option value="">All Categories</option>
+            {% for p in available_participations %}
+              <option value="{{ p.id }}" {% if participation_filter == p.id|stringformat:"i" %}selected{% endif %}>{{ p.name }} ({{ p.game_type.name }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 700;">Round Filter</label>
+          <select name="round" class="form-control" onchange="this.form.submit()" style="margin: 0; width: 100%;">
+            <option value="">All Rounds</option>
+            {% for r in available_rounds %}
+              <option value="{{ r.id }}" {% if round_filter == r.id|stringformat:"i" %}selected{% endif %}>{{ r.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <a href="?season={{ selected_season.id }}" class="btn btn--ghost" style="padding: 0.75rem 1.25rem;">Clear Filters</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="dash-card card">
+      <div class="dash-card__header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <h2 class="dash-card__title">Transaction History</h2>
+        
+        <!-- Instant Search -->
+        <div style="min-width: 300px; position: relative;">
+          <input type="text" id="tableSearch" placeholder="Instant search by name or phone..." 
+                 style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.6rem 1rem 0.6rem 2.5rem; color: var(--text-light); width: 100%; font-size: 0.9rem;"
+                 onkeyup="filterTable()">
+          <svg style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+      </div>
+      <div class="dash-card__body" style="padding: 0;">
+        <div style="overflow-x: auto;">
+          <table id="paymentTable" style="width: 100%; border-collapse: collapse; min-width: 800px;">
+            <thead style="background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <tr>
+                <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Date</th>
+                <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Participant</th>
+                <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Category</th>
+                <th style="padding: 1rem 1.5rem; text-align: right; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Amount</th>
+                <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
+                <th style="padding: 1rem 1.5rem; text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">M-Pesa Info</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in payments %}
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                <td style="padding: 1.25rem 1.5rem;">
+                  <p style="margin: 0; font-weight: 600;">{{ p.created_at|date:"M d, Y" }}</p>
+                  <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">{{ p.created_at|date:"h:i A" }}</p>
+                </td>
+                <td style="padding: 1.25rem 1.5rem;">
+                  <p style="margin: 0; font-weight: 600;">{{ p.user.get_full_name|default:p.user.email }}</p>
+                  <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">{{ p.phone_number }}</p>
+                </td>
+                <td style="padding: 1.25rem 1.5rem;">
+                  <p style="margin: 0; font-weight: 600;">{{ p.participation.name }}</p>
+                  <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">{{ p.participation.game_type.name }}</p>
+                </td>
+                <td style="padding: 1.25rem 1.5rem; text-align: right; font-weight: 700;">
+                  KES {{ p.amount }}
+                </td>
+                <td style="padding: 1.25rem 1.5rem;">
+                  {% if p.status == 'SUCCESS' %}
+                    <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; background: rgba(52, 168, 83, 0.1); color: #34a853; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Success</span>
+                  {% elif p.status == 'PENDING' %}
+                    <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; background: rgba(251, 188, 5, 0.1); color: #fbbc05; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Pending</span>
+                  {% else %}
+                    <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; background: rgba(234, 67, 53, 0.1); color: #ea4335; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Failed</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 1.25rem 1.5rem;">
+                  {% if p.transaction_id %}
+                    <p style="margin: 0; font-size: 0.85rem; font-family: monospace; color: var(--accent);">{{ p.transaction_id }}</p>
+                  {% endif %}
+                  <p style="margin: 0.2rem 0 0; font-size: 0.75rem; color: var(--text-muted); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ p.result_desc }}">
+                    {{ p.result_desc|default:"Waiting for callback..." }}
+                  </p>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" style="padding: 4rem; text-align: center; color: var(--text-muted);">
+                  No payment records found for the selected criteria.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<script>
+function filterTable() {
+  const input = document.getElementById("tableSearch");
+  const filter = input.value.toLowerCase();
+  const table = document.getElementById("paymentTable");
+  const tr = table.getElementsByTagName("tr");
+
+  for (let i = 1; i < tr.length; i++) {
+    const row = tr[i];
+    if (row.cells.length > 0) {
+      const rowText = row.innerText.toLowerCase();
+      if (rowText.indexOf(filter) > -1) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    }
+  }
+}
+</script>
+{% endblock %}

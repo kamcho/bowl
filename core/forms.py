@@ -92,14 +92,38 @@ class RoundCreateForm(forms.Form):
 
 class PromoteWinnersForm(forms.Form):
     from_round = forms.ModelChoiceField(
-        label='Take winners from',
+        label='Take from',
         queryset=Round.objects.none(),
         widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+    criteria = forms.ChoiceField(
+        choices=[
+            ('all_winners', 'All Match Winners'), 
+            ('top_winners', 'Top Winners (Winners only + Top %)'),
+            ('top_percentage', 'Top Percentage (All participants + Top %)')
+        ],
+        initial='all_winners',
+        widget=forms.Select(attrs={'class': 'form-control', 'onchange': 'togglePercentageField(this)'}),
+    )
+    percentage = forms.IntegerField(
+        initial=50,
+        min_value=1,
+        max_value=100,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control', 
+            'type': 'range', 
+            'min': '1', 
+            'max': '100',
+            'style': 'width: 100%; margin-top: 0.5rem;',
+            'oninput': 'updatePercentageDisplay(this.value)'
+        }),
+        help_text="Used for 'Top Winners' and 'Top Percentage' criteria."
     )
 
     def __init__(self, participation, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        qs = participation.rounds.all().order_by('start_date', 'id')
+        qs = participation.rounds.all().order_by('order', 'id')
         self.fields['from_round'].queryset = qs
         if qs.exists():
             self.fields['from_round'].empty_label = None

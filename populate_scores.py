@@ -30,7 +30,7 @@ def populate_scores(challenge):
             SinglesRoll.objects.create(frame=frame, order=2, score=r2, is_recorded=True)
 
 def run():
-    round_id = 83
+    round_id = 87
     r = Round.objects.filter(id=round_id).first()
     if not r:
         print(f"Round {round_id} not found")
